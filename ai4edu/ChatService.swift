@@ -145,6 +145,122 @@ class ChatService {
         }.resume()
     }
     
+    /// Fetches list of threads for the current user
+    func getThreadsList(page: Int = 1, pageSize: Int = 10, workspaceId: String, completion: @escaping (Result<(threads: [ThreadInfo], total: Int), Error>) -> Void) {
+        let endpoint = "/admin/threads/get_thread_list"
+        
+        print("📱 CHAT-API - Starting thread list request")
+        print("📱 CHAT-API - Workspace ID: \(workspaceId)")
+        print("📱 CHAT-API - Page: \(page), Page Size: \(pageSize)")
+        
+        // Determine if user is admin/teacher or student
+        let role = getUserRoleForWorkspace(workspaceId: workspaceId)
+        let userId = (role == "admin" || role == "teacher") ? "-1" : getCurrentStudentID()
+        
+        print("📱 CHAT-API - User role: \(role), Using user_id: \(userId)")
+        
+        // Add query parameters
+        var urlComponents = URLComponents(string: baseURL + endpoint)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "page_size", value: "\(pageSize)"),
+            URLQueryItem(name: "workspace_id", value: workspaceId),
+            URLQueryItem(name: "user_id", value: userId)
+        ]
+        
+        guard let url = urlComponents?.url else {
+            print("📱 CHAT-API - Error: Invalid URL constructed")
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+        
+        print("📱 CHAT-API - Making request to URL: \(url)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        // Add authorization header
+        if let accessToken = getAccessToken() {
+            request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
+            print("📱 CHAT-API - Added authorization header: Bearer access=\(accessToken.prefix(20))...")
+        } else {
+            print("📱 CHAT-API - WARNING: No access token available for authorization")
+            completion(.failure(APIError.noData))
+            return
+        }
+        
+        print("📱 CHAT-API - Sending thread list request...")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("📱 CHAT-API - Network error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📱 CHAT-API - HTTP Status Code: \(httpResponse.statusCode)")
+                print("📱 CHAT-API - Response Headers:")
+                httpResponse.allHeaderFields.forEach { key, value in
+                    print("📱 CHAT-API -   \(key): \(value)")
+                }
+            }
+            
+            guard let data = data else {
+                print("📱 CHAT-API - Error: No data received")
+                completion(.failure(APIError.noData))
+                return
+            }
+            
+            print("📱 CHAT-API - Received \(data.count) bytes of data")
+            
+            do {
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📱 CHAT-API - Raw Response: \(responseString)")
+                }
+                
+                let response = try JSONDecoder().decode(ThreadsListWrapper.self, from: data)
+                print("📱 CHAT-API - Successfully decoded response")
+                print("📱 CHAT-API - Threads count: \(response.data.items.count)")
+                print("📱 CHAT-API - Total threads: \(response.data.total)")
+                
+                if response.data.items.isEmpty {
+                    print("📱 CHAT-API - No threads found")
+                } else if let firstThread = response.data.items.first {
+                    print("📱 CHAT-API - First thread: \(firstThread.threadId), Agent: \(firstThread.agentName)")
+                }
+                
+                // Create a copy of the threads array for the completion handler
+                let threads = response.data.items
+                let total = response.data.total
+                
+                DispatchQueue.main.async {
+                    completion(.success((threads: threads, total: total)))
+                }
+            } catch {
+                print("📱 CHAT-API - JSON Decoding error: \(error)")
+                print("📱 CHAT-API - Error details: \(error.localizedDescription)")
+                
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .keyNotFound(let key, let context):
+                        print("📱 CHAT-API - Key '\(key.stringValue)' not found: \(context.debugDescription)")
+                    case .valueNotFound(let type, let context):
+                        print("📱 CHAT-API - Value of type \(type) not found: \(context.debugDescription)")
+                    case .typeMismatch(let type, let context):
+                        print("📱 CHAT-API - Type mismatch for type \(type): \(context.debugDescription)")
+                    case .dataCorrupted(let context):
+                        print("📱 CHAT-API - Data corrupted: \(context.debugDescription)")
+                    @unknown default:
+                        print("📱 CHAT-API - Unknown decoding error")
+                    }
+                }
+                
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
     // MARK: - Chat Communication
     
     /// Sends a message to a thread and handles streaming response
@@ -789,6 +905,12 @@ class ChatService {
     private func getAccessToken() -> String? {
         return UserDefaults.standard.string(forKey: "accessToken") ?? TokenManager.shared.getAccessToken()
     }
+    
+    /// Get the user's role for a specific workspace
+    private func getUserRoleForWorkspace(workspaceId: String) -> String {
+        let workspaceRoles = TokenManager.shared.getWorkspaceRoles()
+        return workspaceRoles[workspaceId]?.lowercased() ?? "student"
+    }
 }
 
 // MARK: - Response Models
@@ -823,6 +945,39 @@ struct ThreadDataResponse: Codable {
             case userId = "user_id"
         }
     }
+}
+
+/// Thread info for listing threads
+struct ThreadInfo: Codable, Identifiable {
+    let threadId: String
+    let createdAt: String
+    let agentId: String
+    let userId: Int
+    let workspaceId: String
+    let agentName: String
+    
+    var id: String { threadId }
+    
+    enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
+        case createdAt = "created_at"
+        case agentId = "agent_id"
+        case userId = "user_id"
+        case workspaceId = "workspace_id"
+        case agentName = "agent_name"
+    }
+}
+
+/// Response for threads list
+struct ThreadsListWrapper: Codable {
+    let data: ThreadsListData
+    let message: String
+    let success: Bool
+}
+
+struct ThreadsListData: Codable {
+    let items: [ThreadInfo]
+    let total: Int
 }
 
 // End of file

@@ -40,7 +40,7 @@ struct SidebarMobileView: View {
                         }
                         
                         NavigationLink(
-                            destination: ChatHistoryView(),
+                            destination: ThreadHistoryView(),
                             tag: AppTab.chatHistory,
                             selection: $appState.currentTab
                         ) {

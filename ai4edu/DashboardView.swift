@@ -392,7 +392,7 @@ struct SidebarView: View {
                     }
                     
                     NavigationLink(
-                        destination: ChatHistoryView(),
+                        destination: ThreadHistoryView(),
                         tag: AppTab.chatHistory,
                         selection: $appState.currentTab
                     ) {
@@ -1018,9 +1018,9 @@ struct AgentCard: View {
     }
 }
 
-struct ChatHistoryView: View {
+struct ChatHistoryPlaceholderView: View {
     var body: some View {
-        Text("Chat History")
+        Text("Chat History Placeholder")
             .font(.largeTitle)
     }
 }
