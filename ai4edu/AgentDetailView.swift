@@ -11,6 +11,7 @@ import Foundation
 
 struct AgentDetailView: View {
     let agent: Agent
+    var initialThreadId: String? = nil
     
     @State private var messages: [ChatMessage] = []
     @State private var messageText: String = ""
@@ -29,7 +30,7 @@ struct AgentDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Enhanced header with more detailed information
+            // Header with more detailed information
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center) {
                     // Agent name and status
@@ -71,6 +72,16 @@ struct AgentDetailView: View {
                                 
                                 Text("Created by: \(agent.creator)")
                                     .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            // Show thread ID if continuing conversation
+                            if let threadId = currentThreadId {
+                                Divider()
+                                    .frame(height: 16)
+                                
+                                Text("Thread: \(threadId.prefix(8))...")
+                                    .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                         }
@@ -134,6 +145,14 @@ struct AgentDetailView: View {
         .navigationTitle("Agent Details")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(UIColor.secondarySystemBackground))
+        .onAppear {
+            // Check if we have an initial thread ID to continue conversation
+            if let threadId = initialThreadId {
+                // Set the thread ID and load messages
+                currentThreadId = threadId
+                loadThreadMessages(threadId: threadId)
+            }
+        }
     }
     
     // MARK: - Tab Views
@@ -665,6 +684,65 @@ struct AgentDetailView: View {
         default:
             return "doc.fill"
         }
+    }
+    
+    // Add new function to load messages for an existing thread
+    private func loadThreadMessages(threadId: String) {
+        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId)")
+        isLoading = true
+        
+        ChatService.shared.getThreadMessages(threadId: threadId) { result in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                switch result {
+                case .success(let apiMessages):
+                    print("📱 AGENT-DETAIL - Successfully loaded \(apiMessages.count) messages from thread")
+                    
+                    // Convert API messages to ChatMessage format
+                    let chatMessages = apiMessages.map { message -> ChatMessage in
+                        let isFromUser = message.align == "end"
+                        let timestamp = self.parseTimestamp(from: message.id)
+                        
+                        return ChatMessage(
+                            id: message.id,
+                            text: message.content,
+                            isFromUser: isFromUser,
+                            timestamp: timestamp
+                        )
+                    }
+                    
+                    // Add messages to the chat
+                    self.messages = chatMessages
+                    self.messageUpdateCounter += 1
+                    
+                    print("📱 AGENT-DETAIL - Added \(chatMessages.count) messages to the chat")
+                    
+                case .failure(let error):
+                    print("📱 AGENT-DETAIL - Error loading thread messages: \(error)")
+                    
+                    // Show error as a message in the chat
+                    let errorMessage = ChatMessage(
+                        id: UUID().uuidString,
+                        text: "Failed to load previous messages: \(error.localizedDescription). You can still continue the conversation.",
+                        isFromUser: false,
+                        timestamp: Date()
+                    )
+                    self.messages = [errorMessage]
+                    self.messageUpdateCounter += 1
+                }
+            }
+        }
+    }
+    
+    // Helper to parse timestamp from message ID
+    private func parseTimestamp(from messageId: String) -> Date {
+        if messageId.contains("#"), 
+           let timestampString = messageId.components(separatedBy: "#").last,
+           let timestamp = Double(timestampString) {
+            return Date(timeIntervalSince1970: timestamp / 1000.0)
+        }
+        return Date()
     }
 }
 

@@ -83,15 +83,12 @@ class ChatService {
     
     /// Loads messages for a thread
     func getThreadMessages(threadId: String, completion: @escaping (Result<[Message], Error>) -> Void) {
-        let endpoint = "/thread/get_thread"
+        let endpoint = "/admin/threads/get_thread/\(threadId)"
         
-        // Add query parameters
-        var urlComponents = URLComponents(string: baseURL + endpoint)
-        urlComponents?.queryItems = [
-            URLQueryItem(name: "thread_id", value: threadId)
-        ]
+        print("📱 CHAT-API - Loading messages for thread: \(threadId)")
+        print("📱 CHAT-API - Using endpoint: \(endpoint)")
         
-        guard let url = urlComponents?.url else {
+        guard let url = URL(string: baseURL + endpoint) else {
             print("📱 CHAT-API - Error: Invalid URL constructed")
             completion(.failure(APIError.invalidURL))
             return
@@ -103,9 +100,11 @@ class ChatService {
         // Add authorization header
         if let accessToken = getAccessToken() {
             request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-            print("📱 CHAT-API - Added authorization header")
+            print("📱 CHAT-API - Added authorization header with token: \(accessToken.prefix(20))...")
         } else {
             print("📱 CHAT-API - WARNING: No access token available for authorization")
+            completion(.failure(APIError.noData))
+            return
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -115,6 +114,10 @@ class ChatService {
                 return
             }
             
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📱 CHAT-API - HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
             guard let data = data else {
                 print("📱 CHAT-API - Error: No data received")
                 completion(.failure(APIError.noData))
@@ -122,24 +125,44 @@ class ChatService {
             }
             
             do {
-                let response = try JSONDecoder().decode(ThreadDataResponse.self, from: data)
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📱 CHAT-API - Response: \(responseString.prefix(200))...")
+                }
+                
+                let response = try JSONDecoder().decode(ThreadMessagesWrapper.self, from: data)
                 
                 // Convert API messages to our Message model
-                let messages = response.messages.map { apiMessage -> Message in
+                let messages = response.data.messages.map { apiMessage -> Message in
                     return Message(
-                        id: apiMessage.id,
+                        id: apiMessage.msgId,
                         content: apiMessage.content,
                         align: apiMessage.role == "human" ? "end" : "start",
                         user_id: apiMessage.userId,
-                        MsgId: apiMessage.id
+                        MsgId: apiMessage.msgId
                     )
                 }
+                
+                print("📱 CHAT-API - Received \(messages.count) messages")
                 
                 DispatchQueue.main.async {
                     completion(.success(messages))
                 }
             } catch {
                 print("📱 CHAT-API - JSON Decoding error: \(error)")
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .keyNotFound(let key, let context):
+                        print("📱 CHAT-API - Key '\(key.stringValue)' not found: \(context.debugDescription)")
+                    case .valueNotFound(let type, let context):
+                        print("📱 CHAT-API - Value of type \(type) not found: \(context.debugDescription)")
+                    case .typeMismatch(let type, let context):
+                        print("📱 CHAT-API - Type mismatch for type \(type): \(context.debugDescription)")
+                    case .dataCorrupted(let context):
+                        print("📱 CHAT-API - Data corrupted: \(context.debugDescription)")
+                    @unknown default:
+                        print("📱 CHAT-API - Unknown decoding error")
+                    }
+                }
                 completion(.failure(error))
             }
         }.resume()
@@ -911,6 +934,62 @@ class ChatService {
         let workspaceRoles = TokenManager.shared.getWorkspaceRoles()
         return workspaceRoles[workspaceId]?.lowercased() ?? "student"
     }
+    
+    // MARK: - Agent API Methods
+
+    func getAgentDetails(agentId: String, completion: @escaping (Result<Agent, Error>) -> Void) {
+        guard !agentId.isEmpty else {
+            completion(.failure(NSError(domain: "ChatService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Agent ID is empty"])))
+            return
+        }
+        
+        guard let accessToken = UserDefaults.standard.string(forKey: "accessToken") else {
+            completion(.failure(NSError(domain: "ChatService", code: 401, userInfo: [NSLocalizedDescriptionKey: "No access token available"])))
+            return
+        }
+        
+        let endpoint = "/agents/get_agent/\(agentId)"
+        let apiUrl = baseURL + endpoint
+        
+        guard let url = URL(string: apiUrl) else {
+            completion(.failure(NSError(domain: "ChatService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        print("📱 AGENT-API - Getting agent with ID: \(agentId)")
+        print("📱 AGENT-API - URL: \(apiUrl)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("📱 AGENT-API - Network error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                print("📱 AGENT-API - No data received")
+                completion(.failure(NSError(domain: "ChatService", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
+                return
+            }
+            
+            do {
+                // Print the received JSON for debugging
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📱 AGENT-API - Response: \(jsonString.prefix(200))...")
+                }
+                
+                let agentResponse = try JSONDecoder().decode(SingleAgentResponse.self, from: data)
+                completion(.success(agentResponse.data))
+            } catch {
+                print("📱 AGENT-API - JSON decoding error: \(error)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 
 // MARK: - Response Models
@@ -931,19 +1010,37 @@ struct ThreadData: Codable {
 }
 
 /// Response for thread messages
-struct ThreadDataResponse: Codable {
-    let messages: [APIMessage]
+struct ThreadMessagesWrapper: Codable {
+    let data: ThreadMessagesData
+    let message: String
+    let success: Bool
+}
+
+struct ThreadMessagesData: Codable {
+    let threadId: String
+    let messages: [ThreadMessage]
     
-    struct APIMessage: Codable {
-        let id: String
-        let content: String
-        let role: String
-        let userId: String?
-        
-        enum CodingKeys: String, CodingKey {
-            case id, content, role
-            case userId = "user_id"
-        }
+    enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
+        case messages
+    }
+}
+
+struct ThreadMessage: Codable {
+    let threadId: String
+    let createdAt: String
+    let msgId: String
+    let userId: String
+    let role: String
+    let content: String
+    
+    enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
+        case createdAt = "created_at"
+        case msgId = "msg_id"
+        case userId = "user_id"
+        case role
+        case content
     }
 }
 
@@ -978,6 +1075,13 @@ struct ThreadsListWrapper: Codable {
 struct ThreadsListData: Codable {
     let items: [ThreadInfo]
     let total: Int
+}
+
+// Response wrapper for agent API
+struct SingleAgentResponse: Codable {
+    let data: Agent
+    let message: String
+    let success: Bool
 }
 
 // End of file

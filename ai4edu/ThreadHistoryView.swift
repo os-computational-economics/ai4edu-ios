@@ -111,12 +111,9 @@ struct ThreadHistoryView: View {
                         ForEach(threads) { thread in
                             NavigationLink(destination: ChatThreadDetailView(thread: thread)) {
                                 ThreadCard(thread: thread, isSelected: thread.id == selectedThreadId)
-                                    .onTapGesture {
-                                        selectedThreadId = thread.id
-                                    }
+                                    .contentShape(Rectangle())
                             }
-                            .buttonStyle(PlainButtonStyle()) // Remove default NavigationLink styling
-                            .id(thread.id) // Add ID for better list management
+                            .buttonStyle(PlainButtonStyle())
                             
                             // Load more trigger when reaching the last item
                             if thread.id == threads.last?.id {
@@ -279,6 +276,7 @@ struct ThreadCard: View {
                 Text(thread.agentName)
                     .font(.headline)
                     .lineLimit(1)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -304,12 +302,13 @@ struct ThreadCard: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Color.blue.opacity(0.1) : Color(UIColor.systemBackground))
+                .fill(Color(UIColor.systemBackground))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
         )
+        .contentShape(Rectangle())
     }
     
     private func formatDate(_ dateString: String) -> String {

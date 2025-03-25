@@ -84,7 +84,7 @@ class APIService {
     
     // MARK: - Fetch Agents
     
-    func fetchAgents(page: Int, pageSize: Int, workspaceId: String, completion: @escaping (Result<AgentResponse, Error>) -> Void) {
+    func fetchAgents(page: Int, pageSize: Int, workspaceId: String, completion: @escaping (Result<AgentsListResponse, Error>) -> Void) {
         let endpoint = "/admin/agents/agents"
         
         // Add query parameters to the URL
@@ -148,7 +148,7 @@ class APIService {
             }
             
             do {
-                let decodedResponse = try JSONDecoder().decode(AgentResponse.self, from: data)
+                let decodedResponse = try JSONDecoder().decode(AgentsListResponse.self, from: data)
                 print("📱 AGENTS-API - Successfully decoded response")
                 completion(.success(decodedResponse))
             } catch {

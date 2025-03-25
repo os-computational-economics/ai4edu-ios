@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Agent Response
 
-struct AgentResponse: Codable {
+struct AgentsListResponse: Codable {
     let data: AgentData
     let message: String
     let success: Bool
@@ -100,4 +100,33 @@ extension Agent {
             systemPrompt: "System prompt for Marketing Analyst"
         )
     ]
+    
+    // Helper methods to find agents
+    static func findAgent(by id: String) -> Agent? {
+        print("🔍 Looking for agent with ID: \(id)")
+        
+        // First check if we have a cached version 
+        if let cachedAgents = UserDefaults.standard.object(forKey: "cachedAgents") as? Data {
+            print("🔍 Found cached agents data")
+            if let agents = try? JSONDecoder().decode([Agent].self, from: cachedAgents) {
+                print("🔍 Successfully decoded \(agents.count) cached agents")
+                let found = agents.first(where: { $0.agentId == id })
+                print("🔍 Agent found in cache: \(found != nil)")
+                return found
+            } else {
+                print("🔍 Failed to decode cached agents")
+            }
+        } else {
+            print("🔍 No cached agents found in UserDefaults")
+        }
+        
+        // Fallback to mock agents for testing purposes
+        print("🔍 Checking mock agents (total: \(mockAgents.count))")
+        let found = mockAgents.first(where: { $0.agentId == id })
+        print("🔍 Agent found in mocks: \(found != nil)")
+        if found != nil {
+            print("🔍 Found agent name: \(found!.agentName)")
+        }
+        return found
+    }
 } 
