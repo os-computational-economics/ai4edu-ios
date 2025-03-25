@@ -14,275 +14,29 @@ struct DashboardView: View {
     @State private var showTokenInformation: Bool = false
     
     var body: some View {
-        NavigationView {
-            SidebarView()
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header and current workspace
-                    VStack(spacing: 5) {
-                        HStack {
-                            Text("Dashboard")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                showTokenInformation.toggle()
-                            }) {
-                                Label(showTokenInformation ? "Hide Token Info" : "Show Token Info", 
-                                      systemImage: showTokenInformation ? "key.slash.fill" : "key.fill")
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        
-                        if let currentWorkspace = appState.currentWorkspace, !currentWorkspace.id.isEmpty {
-                            HStack {
-                                Text("Current Workspace:")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                
-                                Text(currentWorkspace.name)
-                                    .font(.headline)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Color.accentColor.opacity(0.2))
-                                    .cornerRadius(8)
-                                
-                                Text(currentWorkspace.role.capitalized)
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(roleColor(for: currentWorkspace.role))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(6)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    // Show workspace selector
-                                    NotificationCenter.default.post(
-                                        name: NSNotification.Name("ShowWorkspaceSelector"), 
-                                        object: nil
-                                    )
-                                }) {
-                                    Label("Switch", systemImage: "arrow.left.arrow.right")
-                                        .font(.caption)
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .background(Color(UIColor.systemGray6))
-                            .cornerRadius(10)
-                        } else {
-                            Text("No workspace selected - choose from available workspaces below")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 5)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    
-                    if showTokenInformation {
-                        tokenInfoView
-                    }
-                    
-                    // Your Workspaces from JWT token
-                    if !workspaceRoles.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Your Workspaces")
-                                .font(.title2)
-                                .bold()
-                                .padding(.horizontal)
-                            
-                            Text("These workspaces are associated with your account")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal)
-                            
-                            WorkspaceRolesView(workspaceRoles: workspaceRoles)
-                                .environmentObject(appState)
-                        }
-                        
-                        Divider()
-                            .padding(.vertical, 10)
-                    }
-                    
-                    // Saved Workspaces Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Saved Workspaces")
-                            .font(.title2)
-                            .bold()
-                            .padding(.horizontal)
-                        
-                        if courses.isEmpty {
-                            noWorkspacesView
-                        } else {
-                            workspacesGridView
-                        }
-                    }
-                    
-                    Spacer(minLength: 40)
-                }
-            }
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                loadData()
-                // Debug: print detailed token information
-                TokenManager.shared.debugPrintToken()
+        // Display the appropriate content based on the currently selected tab
+        Group {
+            switch appState.currentTab {
+            case .agents:
+                AgentsView()
+            case .roster:
+                RosterView()
+            case .chatHistory:
+                ThreadHistoryView()
+            case .accessControl:
+                AccessControlView()
+            case .none:
+                AgentsView()
+            case .some(.dashboard):
+                AgentsView()
+            case .some(.settings):
+                AgentsView()
             }
         }
-    }
-    
-    private var tokenInfoView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Token Information")
-                .font(.title3)
-                .bold()
-                .padding(.horizontal)
-            
-            if let jwtData = TokenManager.shared.decodeToken() {
-                // User information
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("User Details")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(jwtData.firstName) \(jwtData.lastName)")
-                                .font(.subheadline)
-                                .bold()
-                            
-                            if !jwtData.email.isEmpty {
-                                Text(jwtData.email)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        if jwtData.isSystemAdmin {
-                            Text("System Admin")
-                                .font(.caption)
-                                .bold()
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.red)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                    }
-                    
-                    Divider()
-                    
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Token Expiration")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            
-                            Text(formatDate(jwtData.expiresAt))
-                                .font(.caption)
-                        }
-                        
-                        Spacer()
-                        
-                        ExpirationStatusView(expirationDate: jwtData.expiresAt)
-                    }
-                }
-                .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
-                .padding(.horizontal)
-                
-                // Workspace roles from token
-                if !jwtData.workspaceRoles.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Token Workspaces")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        Text("These workspaces are available from your token:")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                        
-                        WorkspaceRolesView(workspaceRoles: jwtData.workspaceRoles)
-                            .environmentObject(appState)
-                    }
-                }
-            } else {
-                Text("Unable to retrieve token information")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
+        .onAppear {
+            loadData()
+            TokenManager.shared.debugPrintToken()
         }
-        .padding(.bottom, 20)
-    }
-    
-    private func roleColor(role: String) -> Color {
-        switch role.lowercased() {
-        case "admin":
-            return Color.red
-        case "teacher", "instructor":
-            return Color.orange
-        case "student":
-            return Color.blue
-        default:
-            return Color.gray
-        }
-    }
-    
-    private func roleColor(for role: String) -> Color {
-        switch role.lowercased() {
-        case "admin":
-            return .red
-        case "teacher", "instructor":
-            return .orange
-        case "student":
-            return .blue
-        default:
-            return .gray
-        }
-    }
-    
-    private var noWorkspacesView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "rectangle.on.rectangle.slash")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-                .padding(.bottom, 10)
-            
-            Text("No workspaces available")
-                .font(.title2)
-                .fontWeight(.medium)
-            
-            Text("You don't have access to any workspaces yet. If you think this is an error, please contact your administrator.")
-                .multilineTextAlignment(.center)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 40)
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.top, 40)
-    }
-    
-    private var workspacesGridView: some View {
-        LazyVGrid(columns: [
-            GridItem(.adaptive(minimum: 260), spacing: 16)
-        ], spacing: 16) {
-            ForEach(courses) { course in
-                CourseCard(course: course)
-            }
-        }
-        .padding(.horizontal)
     }
     
     private func loadData() {
@@ -307,13 +61,6 @@ struct DashboardView: View {
             }
             print("================================\n")
         }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .short
-        return dateFormatter.string(from: date)
     }
 }
 
@@ -590,82 +337,32 @@ struct AgentsView: View {
     @State private var totalAgents: Int = 0
     @State private var showErrorAlert: Bool = false
     @State private var errorMessage: String = ""
-    @State private var searchText: String = ""
     @State private var hasMorePages: Bool = true
     @State private var showingAddNewAgent: Bool = false
     @State private var showAgentDetail: Bool = false
-    
-    var filteredAgents: [Agent] {
-        if searchText.isEmpty {
-            return agents
-        } else {
-            return agents.filter { $0.agentName.localizedCaseInsensitiveContains(searchText) }
-        }
-    }
+    @State private var currentWorkspaceId: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with title, search, and buttons
-            VStack(spacing: 16) {
-                HStack {
-                    Text("Agents")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 12) {
-                        Button(action: {
-                            resetAndReload()
-                        }) {
-                            Label("Reload", systemImage: "arrow.clockwise")
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-                
-                HStack {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.secondary)
-                        
-                        TextField("Search agents...", text: $searchText)
-                    }
-                    .padding(8)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(8)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                        }) {
-                            Text("Clear")
-                                .foregroundColor(.blue)
-                        }
-                        .padding(.trailing, 8)
-                    }
-                }
-            }
-            .padding()
-            
-            Divider()
-            
             if isLoading && agents.isEmpty {
                 Spacer()
                 ProgressView("Loading agents...")
                     .padding()
                 Spacer()
-            } else if filteredAgents.isEmpty {
+            } else if agents.isEmpty {
                 emptyStateView()
             } else {
                 agentsTableView()
             }
         }
         .onAppear {
-            if agents.isEmpty {
-                loadAgents()
+            loadAgentsIfNeeded()
+        }
+        .onChange(of: appState.currentWorkspace?.id) { newId in
+            // Reload agents when workspace changes
+            if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
+                currentWorkspaceId = newWorkspaceId
+                resetAndReload()
             }
         }
         .alert(isPresented: $showErrorAlert) {
@@ -697,48 +394,28 @@ struct AgentsView: View {
     
     private func emptyStateView() -> some View {
         VStack(spacing: 20) {
-            Image(systemName: searchText.isEmpty ? "person.text.rectangle.slash" : "magnifyingglass")
+            Image(systemName: "person.text.rectangle.slash")
                 .font(.system(size: 60))
                 .foregroundColor(.gray.opacity(0.5))
                 .padding(.top, 40)
             
-            if searchText.isEmpty {
-                Text("No agents found")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                
-                Text("There are no agents available in this workspace. Please check back later or contact your administrator.")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 40)
-                
-                if appState.currentWorkspace?.role != "student" {
-                    Button(action: {
-                        showingAddNewAgent = true
-                    }) {
-                        Label("Add New Agent", systemImage: "plus")
-                            .padding()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.top, 10)
-                }
-            } else {
-                Text("No matching agents")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                
-                Text("No agents found matching '\(searchText)'")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 40)
-                
+            Text("No agents found")
+                .font(.title2)
+                .foregroundColor(.secondary)
+            
+            Text("There are no agents available in this workspace. Please check back later or contact your administrator.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 40)
+            
+            if appState.currentWorkspace?.role != "student" {
                 Button(action: {
-                    searchText = ""
+                    showingAddNewAgent = true
                 }) {
-                    Label("Clear Search", systemImage: "xmark.circle")
+                    Label("Add New Agent", systemImage: "plus")
                         .padding()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
                 .padding(.top, 10)
             }
         }
@@ -750,7 +427,7 @@ struct AgentsView: View {
         VStack(spacing: 0) {
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    ForEach(filteredAgents) { agent in
+                    ForEach(agents) { agent in
                         AgentCard(agent: agent, role: appState.currentWorkspace?.role ?? "student")
                     }
                     
@@ -776,29 +453,38 @@ struct AgentsView: View {
                             }
                     }
                 }
-                .padding()
+                .padding(.vertical)
+                .padding(.horizontal, 8)
+            }
+            .refreshable {
+                resetAndReload()
             }
             
+            // Restored agent count text with smaller size
             HStack {
-                if searchText.isEmpty {
-                    Text("Showing \(agents.count) of \(totalAgents) agent\(totalAgents == 1 ? "" : "s")")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                } else {
-                    Text("Found \(filteredAgents.count) matching agent\(filteredAgents.count == 1 ? "" : "s")")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                }
+                Text("Showing \(agents.count) of \(totalAgents) agent\(totalAgents == 1 ? "" : "s")")
+                    .foregroundColor(.secondary)
+                    .font(.caption2)
                 
                 Spacer()
             }
-            .padding()
+            .padding(.vertical, 6)
+            .padding(.horizontal)
             .background(Color(UIColor.secondarySystemBackground))
         }
         .background(Color(UIColor.systemBackground))
         .cornerRadius(8)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        .padding()
+        .padding(8)
+    }
+    
+    private func loadAgentsIfNeeded() {
+        if let workspaceId = appState.currentWorkspace?.id, workspaceId != currentWorkspaceId {
+            currentWorkspaceId = workspaceId
+            resetAndReload()
+        } else if agents.isEmpty {
+            loadAgents()
+        }
     }
     
     private func resetAndReload() {
@@ -998,12 +684,11 @@ struct AgentCard: View {
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .overlay(
-            NavigationLink(
-                destination: AgentDetailView(agent: agent),
-                isActive: $showAgentDetail
-            ) { EmptyView() }
-        )
+        .sheet(isPresented: $showAgentDetail) {
+            NavigationView {
+                AgentDetailView(agent: agent)
+            }
+        }
     }
 }
 
@@ -1201,30 +886,10 @@ struct RosterView: View {
     @State private var hasMorePages: Bool = true
     @State private var showErrorAlert: Bool = false
     @State private var errorMessage: String = ""
+    @State private var currentWorkspaceId: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with title
-            HStack {
-                Text("Roster")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                Button(action: {
-                    resetAndReload()
-                }) {
-                    Label("Reload", systemImage: "arrow.clockwise")
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding()
-            
-            Divider()
-            
             if isLoading && users.isEmpty {
                 Spacer()
                 ProgressView("Loading roster...")
@@ -1237,8 +902,13 @@ struct RosterView: View {
             }
         }
         .onAppear {
-            if users.isEmpty {
-                loadUserList()
+            loadUsersIfNeeded()
+        }
+        .onChange(of: appState.currentWorkspace?.id) { newId in
+            // Reload users when workspace changes
+            if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
+                currentWorkspaceId = newWorkspaceId
+                resetAndReload()
             }
         }
         .alert(isPresented: $showErrorAlert) {
@@ -1261,19 +931,10 @@ struct RosterView: View {
                 .font(.title2)
                 .foregroundColor(.secondary)
             
-            Text("There are no users enrolled in this workspace.")
+            Text("There are no users enrolled in this workspace yet.")
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 40)
-            
-            Button(action: {
-                resetAndReload()
-            }) {
-                Label("Try Again", systemImage: "arrow.clockwise")
-                    .padding()
-            }
-            .buttonStyle(.bordered)
-            .padding(.top, 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
@@ -1348,22 +1009,31 @@ struct RosterView: View {
                     }
                 }
             }
+            .refreshable {
+                resetAndReload()
+            }
             
-            // Footer with count
+            // Footer with user count
             HStack {
                 Text("Showing \(users.count) of \(totalUsers) user\(totalUsers == 1 ? "" : "s")")
                     .foregroundColor(.secondary)
-                    .font(.caption)
+                    .font(.caption2)
                 
                 Spacer()
             }
-            .padding()
+            .padding(.vertical, 6)
+            .padding(.horizontal)
             .background(Color(UIColor.secondarySystemBackground))
         }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        .padding()
+    }
+    
+    private func loadUsersIfNeeded() {
+        if let workspaceId = appState.currentWorkspace?.id, workspaceId != currentWorkspaceId {
+            currentWorkspaceId = workspaceId
+            resetAndReload()
+        } else if users.isEmpty {
+            loadUserList()
+        }
     }
     
     private func resetAndReload() {
@@ -1460,6 +1130,7 @@ struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {
         let appState = AppState()
         appState.currentWorkspace = Course(id: "CSDS392.F24", role: "student", name: "iOS App Development")
+        appState.currentTab = .agents
         
         return DashboardView()
             .environmentObject(appState)

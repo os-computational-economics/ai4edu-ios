@@ -14,23 +14,28 @@ struct ChatThreadDetailView: View {
     @State private var messages: [Message] = []
     @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
+    @State private var navigateToContinueChat: Bool = false
+    @State private var agentForContinue: Agent? = nil
     
     var body: some View {
         VStack(spacing: 0) {
             // Header with thread info and continue chat button
             HStack {
+                // Back button
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                .padding(.trailing, 8)
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(thread.agentName)
                         .font(.headline)
                     
                     HStack {
-                        Text(formatDate(thread.createdAt))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("•")
-                            .foregroundColor(.secondary)
-                        
                         Text(formatWorkspaceId(thread.workspaceId))
                             .font(.caption)
                             .padding(.horizontal, 6)
@@ -42,31 +47,27 @@ struct ChatThreadDetailView: View {
                 
                 Spacer()
                 
-                // Use a simple NavigationLink to a separate view
-                NavigationLink(
-                    destination: ContinueChatView(agentId: thread.agentId, threadId: thread.threadId, agentName: thread.agentName)
-                ) {
-                    HStack {
-                        Image(systemName: "bubble.right.fill")
-                        Text("Continue Chat")
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                // Continue chat button
+                Button(action: {
+                    presentContinueChat()
+                }) {
+                    Label("Continue Chat", systemImage: "arrow.right.circle")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
                 }
+
             }
             .padding()
             .background(Color(UIColor.systemBackground))
-            .overlay(
-                Divider(),
-                alignment: .bottom
-            )
+            
+            Divider()
             
             if isLoading {
                 Spacer()
-                ProgressView("Loading conversation...")
+                ProgressView("Loading messages...")
                 Spacer()
             } else if let error = errorMessage {
                 Spacer()
@@ -75,7 +76,7 @@ struct ChatThreadDetailView: View {
                         .font(.system(size: 50))
                         .foregroundColor(.red)
                     
-                    Text("Error loading conversation")
+                    Text("Error loading messages")
                         .font(.headline)
                     
                     Text(error)
@@ -86,7 +87,8 @@ struct ChatThreadDetailView: View {
                     Button("Try Again") {
                         loadMessages()
                     }
-                    .padding()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
                     .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
@@ -100,13 +102,23 @@ struct ChatThreadDetailView: View {
                         .font(.system(size: 50))
                         .foregroundColor(.gray.opacity(0.5))
                     
-                    Text("No messages found")
+                    Text("No messages in this thread")
                         .font(.headline)
+                        .foregroundColor(.secondary)
                     
-                    Text("This conversation appears to be empty.")
+                    Text("Continue the chat to start a conversation with this agent")
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
+                    
+                    Button("Continue Chat") {
+                        presentContinueChat()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -144,12 +156,25 @@ struct ChatThreadDetailView: View {
                     }
                 }
             }
+            
+            // Navigation link for continue chat (hidden)
+            NavigationLink(
+                destination: Group {
+                    if let agent = agentForContinue {
+                        AgentDetailView(agent: agent, initialThreadId: thread.threadId)
+                            .navigationBarHidden(true)
+                    }
+                },
+                isActive: $navigateToContinueChat
+            ) {
+                EmptyView()
+            }
         }
-        .navigationTitle("Thread Details")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(Color(UIColor.systemGray6))
         .onAppear {
             loadMessages()
         }
+        .navigationBarHidden(true)
     }
     
     private func loadMessages() {
@@ -202,6 +227,36 @@ struct ChatThreadDetailView: View {
         // Fallback to current time if date parsing fails
         return Date()
     }
+    
+    // Create a separate method to present the ContinueChatView
+    private func presentContinueChat() {
+        print("📱 THREAD-DETAIL - Continue chat button pressed for thread: \(thread.threadId)")
+        
+        // Create a dummy agent for display purposes
+        let dummyAgent = Agent(
+            agentId: thread.agentId,
+            agentName: thread.agentName,
+            workspaceId: thread.workspaceId,
+            voice: false,
+            allowModelChoice: false,
+            model: "",
+            agentFiles: [:],
+            status: 1,
+            createdAt: "",
+            creator: "",
+            updatedAt: "",
+            systemPrompt: ""
+        )
+        
+        // Set the agent and trigger navigation
+        self.agentForContinue = dummyAgent
+        
+        // Use a short delay to ensure state is updated
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(thread.threadId)")
+            self.navigateToContinueChat = true
+        }
+    }
 }
 
 // MARK: - Continue Chat View
@@ -211,85 +266,34 @@ struct ContinueChatView: View {
     let threadId: String
     let agentName: String
     
-    @State private var isLoading = true
     @State private var messages: [Message] = []
+    @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
     
     var body: some View {
-        Group {
-            if isLoading {
-                ProgressView("Loading conversation...")
-                    .onAppear {
-                        print("⭐️ ContinueChatView - Loading thread messages with ID: \(threadId)")
-                        loadThreadMessages()
-                    }
-            } else if let error = errorMessage {
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.system(size: 50))
-                        .foregroundColor(.red)
-                    
-                    Text("Error Loading Conversation")
-                        .font(.headline)
-                    
-                    Text(error)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                    
-                    Button("Try Again") {
-                        isLoading = true
-                        errorMessage = nil
-                        loadThreadMessages()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-                .padding()
-            } else {
-                // Create a dummy agent for display purposes
-                let dummyAgent = Agent(
-                    agentId: agentId,
-                    agentName: agentName,
-                    workspaceId: "",
-                    voice: false,
-                    allowModelChoice: false,
-                    model: "",
-                    agentFiles: [:],
-                    status: 1,
-                    createdAt: "",
-                    creator: "",
-                    updatedAt: "",
-                    systemPrompt: ""
-                )
-                
-                // Navigate to the chat view with the loaded messages
-                AgentDetailView(agent: dummyAgent, initialThreadId: threadId)
-                    .onAppear {
-                        print("⭐️ ContinueChatView - Navigating to chat with \(messages.count) messages")
-                    }
-            }
-        }
+        // This view will now be unused since we're going directly to AgentDetailView
+        // Keep minimal implementation for backward compatibility
+        AgentDetailView(
+            agent: Agent(
+                agentId: agentId,
+                agentName: agentName,
+                workspaceId: "",
+                voice: false,
+                allowModelChoice: false,
+                model: "",
+                agentFiles: [:],
+                status: 1,
+                createdAt: "",
+                creator: "",
+                updatedAt: "",
+                systemPrompt: ""
+            ),
+            initialThreadId: threadId
+        )
     }
     
     private func loadThreadMessages() {
-        ChatService.shared.getThreadMessages(threadId: threadId) { result in
-            DispatchQueue.main.async {
-                self.isLoading = false
-                
-                switch result {
-                case .success(let messages):
-                    print("⭐️ ContinueChatView - Successfully loaded \(messages.count) messages")
-                    self.messages = messages
-                    
-                case .failure(let error):
-                    print("⭐️ ContinueChatView - Error loading messages: \(error)")
-                    self.errorMessage = "Failed to load messages: \(error.localizedDescription)"
-                }
-            }
-        }
+        // Not used anymore
     }
 }
 

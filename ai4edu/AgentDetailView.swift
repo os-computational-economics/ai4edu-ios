@@ -12,6 +12,7 @@ import Foundation
 struct AgentDetailView: View {
     let agent: Agent
     var initialThreadId: String? = nil
+    @Environment(\.presentationMode) var presentationMode
     
     @State private var messages: [ChatMessage] = []
     @State private var messageText: String = ""
@@ -21,6 +22,7 @@ struct AgentDetailView: View {
     @State private var currentThreadId: String? = nil  // Store the thread ID
     @State private var messageUpdateCounter: Int = 0   // Track message content updates
     @StateObject private var streamObserver = StreamingObserver()  // Add streaming observer
+    @State private var hasInitialized: Bool = false    // Track if view has been initialized
     
     enum DetailTab {
         case chat
@@ -33,6 +35,16 @@ struct AgentDetailView: View {
             // Header with more detailed information
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center) {
+                    // Back button
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.trailing, 8)
+                    
                     // Agent name and status
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .center, spacing: 12) {
@@ -88,6 +100,16 @@ struct AgentDetailView: View {
                     }
                     
                     Spacer()
+                    
+                    // Dismiss button for sheet presentation
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.trailing, 8)
                 }
                 
                 // Tab selector
@@ -142,15 +164,30 @@ struct AgentDetailView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
+        .edgesIgnoringSafeArea(.bottom)
         .navigationTitle("Agent Details")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(UIColor.secondarySystemBackground))
         .onAppear {
-            // Check if we have an initial thread ID to continue conversation
-            if let threadId = initialThreadId {
-                // Set the thread ID and load messages
-                currentThreadId = threadId
-                loadThreadMessages(threadId: threadId)
+            print("📱 AGENT-DETAIL - View appeared for agent: \(agent.agentName), initialThreadId: \(String(describing: initialThreadId)), hasInitialized: \(hasInitialized)")
+            
+            // Only initialize once to prevent duplicate loading
+            if !hasInitialized {
+                hasInitialized = true
+                
+                // Check if we have an initial thread ID to continue conversation
+                if let threadId = initialThreadId {
+                    print("📱 AGENT-DETAIL - Initializing with thread ID: \(threadId)")
+                    currentThreadId = threadId
+                    
+                    // Load the messages after a very short delay to ensure view is fully mounted
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId)")
+                        loadThreadMessages(threadId: threadId)
+                    }
+                } else {
+                    print("📱 AGENT-DETAIL - No initial thread ID, starting fresh conversation")
+                }
             }
         }
     }
@@ -165,7 +202,13 @@ struct AgentDetailView: View {
                     ScrollViewReader { scrollProxy in
                         ScrollView {
                             LazyVStack(spacing: 16) {
-                                if messages.isEmpty {
+                                if isLoading && messages.isEmpty {
+                                    VStack {
+                                        ProgressView("Loading messages...")
+                                            .padding(.top, 40)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                } else if messages.isEmpty {
                                     VStack(spacing: 20) {
                                         Image(systemName: "bubble.left.and.bubble.right")
                                             .font(.system(size: 50))
@@ -688,16 +731,40 @@ struct AgentDetailView: View {
     
     // Add new function to load messages for an existing thread
     private func loadThreadMessages(threadId: String) {
-        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId)")
+        // Set loading state
         isLoading = true
+        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId) (loading state: \(isLoading))")
+        
+        // Clear any existing messages
+        messages = []
+        
+        // Ensure we have valid thread ID saved
+        currentThreadId = threadId
         
         ChatService.shared.getThreadMessages(threadId: threadId) { result in
+            // Make sure we're on the main thread
             DispatchQueue.main.async {
+                // Update loading state
                 self.isLoading = false
+                print("📱 AGENT-DETAIL - Thread messages loading complete, setting isLoading = false")
                 
                 switch result {
                 case .success(let apiMessages):
                     print("📱 AGENT-DETAIL - Successfully loaded \(apiMessages.count) messages from thread")
+                    
+                    // Only proceed if we have messages
+                    if apiMessages.isEmpty {
+                        print("📱 AGENT-DETAIL - Thread exists but contains no messages")
+                        let infoMessage = ChatMessage(
+                            id: UUID().uuidString,
+                            text: "This conversation has been started but doesn't have any messages yet. You can start typing below.",
+                            isFromUser: false,
+                            timestamp: Date()
+                        )
+                        self.messages = [infoMessage]
+                        self.messageUpdateCounter += 1
+                        return
+                    }
                     
                     // Convert API messages to ChatMessage format
                     let chatMessages = apiMessages.map { message -> ChatMessage in
@@ -713,10 +780,9 @@ struct AgentDetailView: View {
                     }
                     
                     // Add messages to the chat
+                    print("📱 AGENT-DETAIL - Adding \(chatMessages.count) messages to the chat")
                     self.messages = chatMessages
                     self.messageUpdateCounter += 1
-                    
-                    print("📱 AGENT-DETAIL - Added \(chatMessages.count) messages to the chat")
                     
                 case .failure(let error):
                     print("📱 AGENT-DETAIL - Error loading thread messages: \(error)")

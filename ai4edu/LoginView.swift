@@ -77,11 +77,6 @@ struct LoginView: View {
                         handleSSOLogin()
                     }) {
                         HStack(spacing: 12) {
-                            Image("AI4EDULogo")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .cornerRadius(6)
-                            
                             Text("Sign in with CWRU Account")
                                 .fontWeight(.semibold)
                         }
@@ -93,6 +88,21 @@ struct LoginView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                     }
                     .disabled(isLoggingIn)
+                    Button(action: {
+                        handleSSOLogin()
+                    }) {
+                        HStack(spacing: 8) {
+                            Text("Sign in with Google Account")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(height: 50)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    }
+                    .disabled(true)
                     
                     if isLoggingIn {
                         ProgressView()
@@ -102,26 +112,26 @@ struct LoginView: View {
                     }
                     
                     // Terms and privacy
-                    VStack(spacing: 8) {
-                        Text("By signing in, you agree to our")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        HStack(spacing: 3) {
-                            Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                            
-                            Text("and")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    .padding(.top, 10)
+//                    VStack(spacing: 8) {
+//                        Text("By signing in, you agree to our")
+//                            .font(.caption)
+//                            .foregroundColor(.secondary)
+//                        
+//                        HStack(spacing: 3) {
+//                            Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
+//                                .font(.caption)
+//                                .foregroundColor(.blue)
+//                            
+//                            Text("and")
+//                                .font(.caption)
+//                                .foregroundColor(.secondary)
+//                            
+//                            Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
+//                                .font(.caption)
+//                                .foregroundColor(.blue)
+//                        }
+//                    }
+//                    .padding(.top, 10)
                 }
                 .padding(30)
                 .background(
@@ -134,16 +144,16 @@ struct LoginView: View {
                 Spacer()
                 
                 // Footer
-                HStack(spacing: 4) {
-                    Text("Need help?")
-                        .font(.footnote)
-                        .foregroundColor(.white.opacity(0.8))
-                    
-                    Link("Contact Support", destination: URL(string: "mailto:support@ai4edu.example.com")!)
-                        .font(.footnote)
-                        .foregroundColor(.white)
-                }
-                .padding(.bottom, 20)
+//                HStack(spacing: 4) {
+//                    Text("Need help?")
+//                        .font(.footnote)
+//                        .foregroundColor(.white.opacity(0.8))
+//                    
+//                    Link("Contact Support", destination: URL(string: "mailto:support@ai4edu.example.com")!)
+//                        .font(.footnote)
+//                        .foregroundColor(.white)
+//                }
+//                .padding(.bottom, 20)
             }
             .padding()
             

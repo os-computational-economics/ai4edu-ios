@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct ThreadHistoryView: View {
     @EnvironmentObject private var appState: AppState
     
     @State private var threads: [ThreadInfo] = []
-    @State private var selectedThreadId: String? = nil
+    @State private var selectedThread: ThreadInfo? = nil
+    @State private var navigateToThreadDetail: Bool = false
     @State private var currentPage: Int = 1
     @State private var pageSize: Int = 20
     @State private var totalThreads: Int = 0
@@ -21,124 +23,125 @@ struct ThreadHistoryView: View {
     @State private var errorMessage: String? = nil
     @State private var showDebugAlert: Bool = false
     @State private var debugMessage: String = ""
+    @State private var currentWorkspaceId: String = ""
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with debug button
-            HStack {
-                Text("Chat History")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .padding(.leading)
-                
-                Spacer()
-                
-                Button(action: {
-                    refreshThreads()
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.blue)
-                }
-                .padding(.trailing, 8)
-                
-                Button(action: {
-                    let workspaceId = appState.currentWorkspace?.id ?? "none"
-                    showDebugAlert = true
-                    debugMessage = "Workspace ID: \(workspaceId)\nThreads count: \(threads.count)\nTotal threads: \(totalThreads)\nCurrent page: \(currentPage)"
-                }) {
-                    Image(systemName: "info.circle")
-                        .foregroundColor(.blue)
-                }
-                .padding(.trailing)
-            }
-            .padding(.vertical, 10)
-            .background(Color(UIColor.systemBackground))
-            .overlay(
-                Divider(),
-                alignment: .bottom
-            )
-            
-            if isLoading && threads.isEmpty {
-                Spacer()
-                ProgressView("Loading threads...")
-                Spacer()
-            } else if let error = errorMessage, threads.isEmpty {
-                Spacer()
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.system(size: 50))
-                        .foregroundColor(.red)
-                    
-                    Text("Error loading chat history")
-                        .font(.headline)
-                    
-                    Text(error)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                    
-                    Button("Try Again") {
-                        refreshThreads()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-                .padding()
-                Spacer()
-            } else if threads.isEmpty {
-                Spacer()
-                VStack(spacing: 20) {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 50))
-                        .foregroundColor(.gray.opacity(0.5))
-                    
-                    Text("No chat history found")
-                        .font(.headline)
-                    
-                    Text("Start a new conversation with an agent to see your chat history")
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                }
-                .padding()
-                Spacer()
-            } else {
-                // Thread list with infinite scroll
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(threads) { thread in
-                            NavigationLink(destination: ChatThreadDetailView(thread: thread)) {
-                                ThreadCard(thread: thread, isSelected: thread.id == selectedThreadId)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            // Load more trigger when reaching the last item
-                            if thread.id == threads.last?.id {
-                                loadMoreTrigger
-                            }
-                        }
+        NavigationView {
+            VStack(spacing: 0) {
+                // Thread list content
+                if isLoading && threads.isEmpty {
+                    // Loading state
+                    Spacer()
+                    ProgressView("Loading chat history...")
+                    Spacer()
+                } else if let error = errorMessage, threads.isEmpty {
+                    // Error state
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
                         
-                        // Loading indicator at the bottom
-                        if isLoadingMore {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding()
-                                Spacer()
-                            }
+                        Text("Could not load chat history")
+                            .font(.headline)
+                        
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            refreshThreads()
+                        }) {
+                            Text("Try Again")
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
                         }
                     }
                     .padding()
+                    Spacer()
+                } else if threads.isEmpty {
+                    // Empty state
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray.opacity(0.5))
+                        
+                        Text("No Chat History")
+                            .font(.headline)
+                        
+                        Text("Start a conversation with an agent to see your chat history here.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .padding()
+                    Spacer()
+                } else {
+                    // Thread list
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(threads) { thread in
+                                ThreadListItem(thread: thread)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        print("Selected thread: \(thread.threadId)")
+                                        selectedThread = thread
+                                        navigateToThreadDetail = true
+                                    }
+                                
+                                Divider()
+                                    .padding(.leading)
+                            }
+                            
+                            // Load more trigger
+                            loadMoreTrigger
+                        }
+                    }
+                    .refreshable {
+                        await refreshThreadsAsync()
+                    }
+                    
+                    // Thread count footer
+                    HStack {
+                        Spacer()
+                        Text("\(threads.count) threads")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(8)
+                    }
+                }
+                
+                // Navigate to thread detail
+                NavigationLink(
+                    destination: Group {
+                        if let thread = selectedThread {
+                            ChatThreadDetailView(thread: thread)
+                                .navigationBarHidden(true)
+                        }
+                    },
+                    isActive: $navigateToThreadDetail
+                ) {
+                    EmptyView()
                 }
             }
+            .navigationBarTitle("Chat History", displayMode: .inline)
+            .navigationBarHidden(true)
         }
-        .navigationTitle("Chat History")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
-            if threads.isEmpty {
+            loadThreadsIfNeeded()
+        }
+        .onChange(of: appState.currentWorkspace?.id) { newId in
+            // Reload threads when workspace changes
+            if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
+                currentWorkspaceId = newWorkspaceId
                 refreshThreads()
             }
         }
@@ -151,36 +154,50 @@ struct ThreadHistoryView: View {
         }
     }
     
-    // Helper view that triggers loading more data
+    // Load more trigger view
     private var loadMoreTrigger: some View {
         Group {
-            if hasMorePages {
+            if isLoadingMore {
+                ProgressView()
+                    .padding()
+            } else if hasMorePages {
+                // Invisible rectangle that triggers loading more when it appears
                 Rectangle()
-                    .frame(height: 20)
                     .foregroundColor(.clear)
+                    .frame(height: 50)
                     .onAppear {
-                        loadMoreIfNeeded()
+                        loadMoreThreads()
                     }
             } else {
-                // End of list indicator
-                if !threads.isEmpty {
-                    Text("End of History")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                }
+                // End of history message
+                Text("End of chat history")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding()
+            }
+        }
+    }
+    
+    // Helper functions
+    
+    private func loadThreadsIfNeeded() {
+        // If we don't have threads yet, or workspace has changed, load them
+        if threads.isEmpty || 
+           (appState.currentWorkspace != nil && currentWorkspaceId != appState.currentWorkspace!.id) {
+            if let workspaceId = appState.currentWorkspace?.id {
+                currentWorkspaceId = workspaceId
+                refreshThreads()
             }
         }
     }
     
     private func refreshThreads() {
-        // Reset pagination state
+        print("📱 THREAD-HISTORY - Refreshing threads")
+        // Reset pagination
         currentPage = 1
-        threads = []
-        hasMorePages = true
+        isLoading = true
+        errorMessage = nil
         
-        // Load first page
         loadThreads(isRefresh: true)
     }
     
@@ -191,75 +208,74 @@ struct ThreadHistoryView: View {
     }
     
     private func loadMoreThreads() {
-        // Check if we can load more pages
-        guard hasMorePages && !isLoadingMore else { return }
-        
-        // Load next page
-        currentPage += 1
-        loadThreads(isMore: true)
+        // Only load more if we have more pages and aren't already loading
+        if hasMorePages && !isLoading && !isLoadingMore {
+            currentPage += 1
+            loadThreads()
+        }
     }
     
-    private func loadThreads(isRefresh: Bool = false, isMore: Bool = false) {
-        if isRefresh {
-            isLoading = true
-            errorMessage = nil
-        } else if isMore {
-            isLoadingMore = true
-        }
-        
-        // Get current workspace ID from app state
-        guard let workspace = appState.currentWorkspace, !workspace.id.isEmpty else {
-            print("📱 THREAD-HISTORY - ERROR: No current workspace selected!")
-            self.isLoading = false
-            self.isLoadingMore = false
-            self.errorMessage = "No workspace selected. Please select a workspace first."
+    private func loadThreads(isRefresh: Bool = false) {
+        guard let workspace = appState.currentWorkspace else {
+            errorMessage = "No workspace selected"
+            isLoading = false
             return
         }
         
-        let workspaceId = workspace.id
-        print("📱 THREAD-HISTORY - Loading threads for workspace: '\(workspaceId)' (Page: \(currentPage))")
+        if isRefresh {
+            threads = []
+            hasMorePages = true
+        }
         
-        ChatService.shared.getThreadsList(page: currentPage, pageSize: pageSize, workspaceId: workspaceId) { result in
-            // Reset loading states
-            if isRefresh {
+        print("📱 THREAD-HISTORY - Loading threads for page \(currentPage) in workspace \(workspace.id)")
+        
+        // Ensure we're not already loading
+        if isLoadingMore { return }
+        
+        isLoading = true
+        isLoadingMore = !threads.isEmpty
+        
+        ChatService.shared.getThreadsList(
+            page: currentPage,
+            pageSize: pageSize,
+            workspaceId: workspace.id
+        ) { result in
+            DispatchQueue.main.async {
                 self.isLoading = false
-            } else if isMore {
                 self.isLoadingMore = false
-            }
-            
-            switch result {
-            case .success(let response):
-                print("📱 THREAD-HISTORY - Received \(response.threads.count) threads (Total: \(response.total))")
                 
-                if isRefresh {
-                    self.threads = response.threads
-                } else if isMore {
-                    // Append new threads to existing list
-                    self.threads.append(contentsOf: response.threads)
-                }
-                
-                self.totalThreads = response.total
-                
-                // Check if we've loaded all threads
-                self.hasMorePages = self.threads.count < self.totalThreads
-                
-                // Debug: print all threads
-                if response.threads.isEmpty {
-                    print("📱 THREAD-HISTORY - No more threads found")
-                } else {
-                    print("📱 THREAD-HISTORY - Loaded \(response.threads.count) more threads. Total loaded: \(self.threads.count) of \(self.totalThreads)")
-                }
-                
-            case .failure(let error):
-                print("📱 THREAD-HISTORY - Error loading threads: \(error)")
-                if isRefresh {
+                switch result {
+                case .success(let response):
+                    // Handle success
+                    if isRefresh {
+                        // Replace all threads on refresh
+                        self.threads = response.threads
+                    } else {
+                        // Append new threads
+                        self.threads.append(contentsOf: response.threads)
+                    }
+                    
+                    self.totalThreads = response.total
+                    
+                    // Check if we have more pages
+                    self.hasMorePages = self.threads.count < response.total
+                    
+                    print("📱 THREAD-HISTORY - Loaded \(response.threads.count) threads. Total: \(response.total)")
+                    
+                case .failure(let error):
+                    // Handle error
                     self.errorMessage = error.localizedDescription
+                    print("📱 THREAD-HISTORY - Error loading threads: \(error)")
                 }
-                
-                // Set debug message for alert
-                self.debugMessage = "Error: \(error.localizedDescription)\nWorkspace ID: '\(workspaceId)'"
-                self.showDebugAlert = true
             }
+        }
+    }
+    
+    // Asynchronous refresh for SwiftUI's refreshable modifier
+    private func refreshThreadsAsync() async {
+        await withCheckedContinuation { continuation in
+            refreshThreads()
+            continuation.resume()
         }
     }
 }
@@ -328,6 +344,106 @@ struct ThreadCard: View {
     
     private func formatWorkspaceId(_ id: String) -> String {
         return id.replacingOccurrences(of: "_", with: ".")
+    }
+}
+
+// MARK: - Thread List Item
+
+struct ThreadListItem: View {
+    let thread: ThreadInfo
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            // Agent icon
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 44, height: 44)
+                
+                Text(String(thread.agentName.prefix(1)).uppercased())
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.blue)
+            }
+            
+            // Thread information
+            VStack(alignment: .leading, spacing: 4) {
+                Text(thread.agentName)
+                    .font(.headline)
+                    .lineLimit(1)
+                
+                HStack(spacing: 6) {
+                    // Thread creation date
+                    Text(formatDate(thread.createdAt))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    // Workspace indicator
+                    Text(formatWorkspaceId(thread.workspaceId))
+                        .font(.caption)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(4)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            // Chevron indicating it's tappable
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .contentShape(Rectangle())
+    }
+    
+    // Helper functions for formatting
+    private func formatDate(_ dateString: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        
+        if let date = dateFormatter.date(from: dateString) {
+            let calendar = Calendar.current
+            
+            // If today, show time
+            if calendar.isDateInToday(date) {
+                let timeFormatter = DateFormatter()
+                timeFormatter.timeStyle = .short
+                return "Today, \(timeFormatter.string(from: date))"
+            }
+            
+            // If yesterday, say "Yesterday"
+            if calendar.isDateInYesterday(date) {
+                return "Yesterday"
+            }
+            
+            // If within last 7 days, show day of week
+            if let daysAgo = calendar.dateComponents([.day], from: date, to: Date()).day, daysAgo < 7 {
+                let dayFormatter = DateFormatter()
+                dayFormatter.dateFormat = "EEEE" // Day of week
+                return dayFormatter.string(from: date)
+            }
+            
+            // Otherwise show date
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateStyle = .medium
+            displayFormatter.timeStyle = .none
+            
+            return displayFormatter.string(from: date)
+        }
+        
+        return dateString
+    }
+    
+    private func formatWorkspaceId(_ id: String) -> String {
+        // Format the ID in a user-friendly way
+        let parts = id.replacingOccurrences(of: "_", with: ".").components(separatedBy: ".")
+        if parts.count >= 2 {
+            return parts[0]
+        }
+        return id
     }
 }
 
