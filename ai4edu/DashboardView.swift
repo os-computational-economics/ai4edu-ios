@@ -20,7 +20,14 @@ struct DashboardView: View {
             case .agents:
                 AgentsView()
             case .roster:
-                RosterView()
+                // Only show roster if the user has teacher or admin role
+                if let role = appState.currentWorkspace?.role,
+                   role.lowercased() == "teacher" || role.lowercased() == "admin" {
+                    RosterView()
+                } else {
+                    // Show access restricted view for students
+                    restrictedAccessView()
+                }
             case .chatHistory:
                 ThreadHistoryView()
             case .accessControl:
@@ -37,6 +44,28 @@ struct DashboardView: View {
             loadData()
             TokenManager.shared.debugPrintToken()
         }
+    }
+    
+    // View to show when access is restricted
+    private func restrictedAccessView() -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "lock.shield")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+                .padding(.top, 40)
+            
+            Text("Access Restricted")
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            Text("The roster view is only available to teachers and administrators.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 40)
+            
+            Spacer()
+        }
+        .padding()
     }
     
     private func loadData() {
@@ -640,29 +669,42 @@ struct AgentCard: View {
             
             // Bottom section: Buttons
             HStack(spacing: 12) {
-                // Chat button - always show
+                // Chat button - always show with a filled style
                 Button(action: {
                     showAgentDetail = true
                 }) {
-                    Label("Chat", systemImage: "message")
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .frame(maxWidth: .infinity)
+                    HStack {
+                        Image(systemName: "message.fill")
+                        Text("Chat")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
                 }
-                .buttonStyle(.bordered)
                 
                 // Delete button - disabled for teachers, hidden for students
                 if role != "student" {
                     Button(action: {
                         // Delete action
                     }) {
-                        Label("Delete", systemImage: "trash")
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity)
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete")
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
+                        .background(role == "teacher" ? Color.gray.opacity(0.2) : Color.red.opacity(0.1))
+                        .foregroundColor(role == "teacher" ? Color.gray : Color.red)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(role == "teacher" ? Color.gray.opacity(0.3) : Color.red.opacity(0.5), lineWidth: 1)
+                        )
                     }
-                    .buttonStyle(.bordered)
-                    .foregroundColor(.red)
                     .disabled(role == "teacher") // Disable for teachers
                 }
                 
@@ -671,12 +713,21 @@ struct AgentCard: View {
                     Button(action: {
                         // Edit action
                     }) {
-                        Label("Edit", systemImage: "pencil")
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity)
+                        HStack {
+                            Image(systemName: "pencil")
+                            Text("Edit")
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange.opacity(0.1))
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.orange.opacity(0.5), lineWidth: 1)
+                        )
                     }
-                    .buttonStyle(.bordered)
                 }
             }
         }

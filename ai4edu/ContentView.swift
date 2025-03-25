@@ -9,14 +9,18 @@ import SwiftUI
 import Combine
 
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
+    @EnvironmentObject var appState: AppState
     
     var body: some View {
         Group {
             if appState.isLoggedIn {
                 MainView()
+                    .environmentObject(appState)
+                    .preferredColorScheme(appState.isDarkMode ? .dark : .light)
             } else {
                 LoginView()
+                    .environmentObject(appState)
+                    .preferredColorScheme(appState.isDarkMode ? .dark : .light)
             }
         }
         .onAppear {
@@ -44,7 +48,7 @@ struct MainView: View {
                         if let workspace = appState.currentWorkspace {
                             HStack {
                                 // Workspace icon
-                                ZStack {
+        ZStack {
                                     Circle()
                                         .fill(roleColor(for: workspace.role).opacity(0.2))
                                         .frame(width: 26, height: 26)
@@ -119,17 +123,17 @@ struct MainView: View {
                             alignment: .top
                         )
                     }
-                    .onAppear {
-                        // Get workspace roles from token
-                        workspaceRoles = TokenManager.shared.getWorkspaceRoles()
-                        
-                        if let accessToken = TokenManager.shared.getAccessToken(),
-                           let refreshToken = TokenManager.shared.getRefreshToken() {
-                            print("=== Current Tokens ===")
-                            print("Access Token: \(accessToken)")
-                            print("Refresh Token: \(refreshToken)")
-                            print("====================")
-                        }
+                .onAppear {
+                    // Get workspace roles from token
+                    workspaceRoles = TokenManager.shared.getWorkspaceRoles()
+                    
+                    if let accessToken = TokenManager.shared.getAccessToken(),
+                       let refreshToken = TokenManager.shared.getRefreshToken() {
+                        print("=== Current Tokens ===")
+                        print("Access Token: \(accessToken)")
+                        print("Refresh Token: \(refreshToken)")
+                        print("====================")
+                    }
                     }
                     .background(
                         NavigationLink(
@@ -224,18 +228,18 @@ struct MainView: View {
                     .onAppear {
                         // Get workspace roles from token
                         workspaceRoles = TokenManager.shared.getWorkspaceRoles()
-                        
-                        // If there's only one workspace, auto-select it
-                        if workspaceRoles.count == 1, 
-                           let workspaceId = workspaceRoles.keys.first,
-                           let role = workspaceRoles[workspaceId] {
-                            selectWorkspace(id: workspaceId, role: role)
-                        }
+                    
+                    // If there's only one workspace, auto-select it
+                    if workspaceRoles.count == 1, 
+                       let workspaceId = workspaceRoles.keys.first,
+                       let role = workspaceRoles[workspaceId] {
+                        selectWorkspace(id: workspaceId, role: role)
+                    }
                     }
                 }
-                
+            
                 // Workspace selector overlay
-                if showWorkspaceSelector {
+            if showWorkspaceSelector {
                     Color.black.opacity(0.3)
                         .edgesIgnoringSafeArea(.all)
                         .onTapGesture {
@@ -252,7 +256,7 @@ struct MainView: View {
                             Spacer()
                             
                             Button(action: {
-                                showWorkspaceSelector = false
+                        showWorkspaceSelector = false
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.title3)
@@ -275,9 +279,9 @@ struct MainView: View {
                                             isCurrentWorkspace: appState.currentWorkspace?.id == workspaceId,
                                             onSelect: {
                                                 selectWorkspace(id: workspaceId, role: role)
-                                                showWorkspaceSelector = false
-                                            }
-                                        )
+                        showWorkspaceSelector = false
+                    }
+                )
                                     }
                                 }
                             }
@@ -322,6 +326,7 @@ struct MainView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .preferredColorScheme(appState.isDarkMode ? .dark : .light)
     }
     
     // Main tab content (Agents, Roster, Chat History)
@@ -337,12 +342,16 @@ struct MainView: View {
                         action: { appState.currentTab = .agents }
                     )
                     
-                    NavigationTabButton(
-                        title: "Roster",
-                        icon: "person.2.fill",
-                        isSelected: appState.currentTab == .roster,
-                        action: { appState.currentTab = .roster }
-                    )
+                    // Only show Roster tab for teachers and admins
+                    if let role = appState.currentWorkspace?.role,
+                       role.lowercased() == "teacher" || role.lowercased() == "admin" {
+                        NavigationTabButton(
+                            title: "Roster",
+                            icon: "person.2.fill",
+                            isSelected: appState.currentTab == .roster,
+                            action: { appState.currentTab = .roster }
+                        )
+                    }
                     
                     NavigationTabButton(
                         title: "Chat History",
@@ -385,6 +394,37 @@ struct MainView: View {
                     .tracking(0.5)
                     .padding(.horizontal)
                     .padding(.top, 16)
+                
+                // Dark Mode Toggle
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("APPEARANCE")
+                        .font(.footnote)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .tracking(0.5)
+                    
+                    HStack {
+                        Image(systemName: appState.isDarkMode ? "moon.fill" : "sun.max.fill")
+                            .foregroundColor(appState.isDarkMode ? .purple : .orange)
+                            .font(.system(size: 18))
+                            .frame(width: 25, height: 25)
+                        
+                        Text("Dark Mode")
+                            .font(.headline)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $appState.isDarkMode)
+                            .labelsHidden()
+                            .onChange(of: appState.isDarkMode) { _ in
+                                appState.toggleDarkMode()
+                            }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(10)
+                }
+                .padding(.horizontal)
                 
                 // Logout option
                 Button(action: {

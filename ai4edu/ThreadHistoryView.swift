@@ -107,15 +107,6 @@ struct ThreadHistoryView: View {
                     .refreshable {
                         await refreshThreadsAsync()
                     }
-                    
-                    // Thread count footer
-                    HStack {
-                        Spacer()
-                        Text("\(threads.count) threads")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(8)
-                    }
                 }
                 
                 // Navigate to thread detail
@@ -354,17 +345,6 @@ struct ThreadListItem: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            // Agent icon
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 44, height: 44)
-                
-                Text(String(thread.agentName.prefix(1)).uppercased())
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.blue)
-            }
-            
             // Thread information
             VStack(alignment: .leading, spacing: 4) {
                 Text(thread.agentName)
@@ -405,32 +385,9 @@ struct ThreadListItem: View {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
         
         if let date = dateFormatter.date(from: dateString) {
-            let calendar = Calendar.current
-            
-            // If today, show time
-            if calendar.isDateInToday(date) {
-                let timeFormatter = DateFormatter()
-                timeFormatter.timeStyle = .short
-                return "Today, \(timeFormatter.string(from: date))"
-            }
-            
-            // If yesterday, say "Yesterday"
-            if calendar.isDateInYesterday(date) {
-                return "Yesterday"
-            }
-            
-            // If within last 7 days, show day of week
-            if let daysAgo = calendar.dateComponents([.day], from: date, to: Date()).day, daysAgo < 7 {
-                let dayFormatter = DateFormatter()
-                dayFormatter.dateFormat = "EEEE" // Day of week
-                return dayFormatter.string(from: date)
-            }
-            
-            // Otherwise show date
+            // Always show the full date and time in a consistent format
             let displayFormatter = DateFormatter()
-            displayFormatter.dateStyle = .medium
-            displayFormatter.timeStyle = .none
-            
+            displayFormatter.dateFormat = "M/d/yyyy, h:mm:ss a"
             return displayFormatter.string(from: date)
         }
         

@@ -83,15 +83,18 @@ struct SidebarMobileView: View {
                             }
                         )
                         
-                        NavigationRow(
-                            icon: "person.2.fill",
-                            title: "Roster",
-                            isSelected: appState.currentTab == .roster,
-                            action: {
-                                appState.currentTab = .roster
-                                isPresented = false
-                            }
-                        )
+                        // Only show Roster for teachers and admins
+                        if workspace.role.lowercased() == "teacher" || workspace.role.lowercased() == "admin" {
+                            NavigationRow(
+                                icon: "person.2.fill",
+                                title: "Roster",
+                                isSelected: appState.currentTab == .roster,
+                                action: {
+                                    appState.currentTab = .roster
+                                    isPresented = false
+                                }
+                            )
+                        }
                         
                         NavigationRow(
                             icon: "bubble.left.and.bubble.right.fill",
