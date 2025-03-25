@@ -608,6 +608,7 @@ struct AgentsView: View {
     @State private var searchText: String = ""
     @State private var hasMorePages: Bool = true
     @State private var showingAddNewAgent: Bool = false
+    @State private var showAgentDetail: Bool = false
     
     var filteredAgents: [Agent] {
         if searchText.isEmpty {
@@ -1012,9 +1013,12 @@ struct AgentCard: View {
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .sheet(isPresented: $showAgentDetail) {
-            AgentDetailView(agent: agent)
-        }
+        .overlay(
+            NavigationLink(
+                destination: AgentDetailView(agent: agent),
+                isActive: $showAgentDetail
+            ) { EmptyView() }
+        )
     }
 }
 
