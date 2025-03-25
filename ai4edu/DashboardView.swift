@@ -328,13 +328,6 @@ struct SidebarView: View {
     
     var body: some View {
         List {
-            NavigationLink(
-                destination: DashboardContentView(),
-                tag: AppTab.dashboard,
-                selection: $appState.currentTab
-            ) {
-                Label("Dashboard", systemImage: "square.grid.2x2")
-            }
             
             // Display all workspaces from JWT directly in sidebar
             if !workspaceRoles.isEmpty {
@@ -585,14 +578,6 @@ struct SidebarView: View {
         default:
             return .gray
         }
-    }
-}
-
-// Placeholder views
-struct DashboardContentView: View {
-    var body: some View {
-        Text("Dashboard Content")
-            .font(.largeTitle)
     }
 }
 

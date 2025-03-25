@@ -11,130 +11,239 @@ struct SidebarMobileView: View {
     @EnvironmentObject private var appState: AppState
     @Binding var isPresented: Bool
     @State private var workspaceRoles: [String: String] = [:]
+    @State private var showLogoutConfirmation = false
     
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text("NAVIGATION")) {
-                    NavigationLink(
-                        destination: DashboardContentView(),
-                        tag: AppTab.dashboard,
-                        selection: $appState.currentTab
-                    ) {
-                        Label("Dashboard", systemImage: "square.grid.2x2")
-                    }
-                    .onTapGesture {
-                        isPresented = false
+        VStack(spacing: 0) {
+            // Header with current workspace info
+            if let workspace = appState.currentWorkspace, !workspace.id.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("CURRENT: \(formatWorkspaceName(workspace.id))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            isPresented = false
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(.gray)
+                        }
                     }
                     
-                    if let workspace = appState.currentWorkspace, !workspace.id.isEmpty {
-                        NavigationLink(
-                            destination: AgentsView(),
-                            tag: AppTab.agents,
-                            selection: $appState.currentTab
-                        ) {
-                            Label("Agents", systemImage: "person.text.rectangle")
-                        }
-                        .onTapGesture {
-                            isPresented = false
-                        }
-                        
-                        NavigationLink(
-                            destination: ThreadHistoryView(),
-                            tag: AppTab.chatHistory,
-                            selection: $appState.currentTab
-                        ) {
-                            Label("Chat History", systemImage: "bubble.left.and.bubble.right")
-                        }
-                        .onTapGesture {
-                            isPresented = false
+                    HStack(spacing: 12) {
+                        // Workspace icon
+                        ZStack {
+                            Circle()
+                                .fill(roleColor(for: workspace.role).opacity(0.2))
+                                .frame(width: 42, height: 42)
+                            
+                            Text(String(formatWorkspaceName(workspace.id).prefix(2)).uppercased())
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(roleColor(for: workspace.role))
                         }
                         
-                        if appState.currentWorkspace?.role == "admin" {
-                            NavigationLink(
-                                destination: AccessControlView(),
-                                tag: AppTab.accessControl,
-                                selection: $appState.currentTab
-                            ) {
-                                Label("Access Control", systemImage: "lock.shield")
-                            }
-                            .onTapGesture {
-                                isPresented = false
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(formatWorkspaceName(workspace.id))
+                                .font(.headline)
+                            
+                            HStack {
+                                Text(workspace.role.capitalized)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(roleColor(for: workspace.role))
+                                    .cornerRadius(12)
                             }
                         }
                     }
                 }
+                .padding()
+                .background(Color(.systemGray6))
+            }
+            
+            // Navigation List
+            List {
+                // Navigation Section
+                Section {
+                    if let workspace = appState.currentWorkspace, !workspace.id.isEmpty {
+                        NavigationRow(
+                            icon: "person.text.rectangle.fill",
+                            title: "Agents",
+                            isSelected: appState.currentTab == .agents,
+                            action: {
+                                appState.currentTab = .agents
+                                isPresented = false
+                            }
+                        )
+                        
+                        NavigationRow(
+                            icon: "person.2.fill",
+                            title: "Roster",
+                            isSelected: appState.currentTab == .roster,
+                            action: {
+                                appState.currentTab = .roster
+                                isPresented = false
+                            }
+                        )
+                        
+                        NavigationRow(
+                            icon: "bubble.left.and.bubble.right.fill",
+                            title: "Chat History",
+                            isSelected: appState.currentTab == .chatHistory,
+                            action: {
+                                appState.currentTab = .chatHistory
+                                isPresented = false
+                            }
+                        )
+                        
+                        if workspace.role.lowercased() == "admin" {
+                            NavigationRow(
+                                icon: "lock.shield.fill",
+                                title: "Access Control",
+                                isSelected: appState.currentTab == .accessControl,
+                                action: {
+                                    appState.currentTab = .accessControl
+                                    isPresented = false
+                                }
+                            )
+                        }
+                    }
+                } header: {
+                    Text("NAVIGATION")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                // Display all workspaces from JWT directly in sidebar
+                // Workspaces Section
                 if !workspaceRoles.isEmpty {
-                    Section(header: Text("WORKSPACES")) {
+                    Section {
                         ForEach(workspaceRoles.keys.sorted(), id: \.self) { workspaceId in
-                            if let role = workspaceRoles[workspaceId] {
-                                let isCurrentWorkspace = appState.currentWorkspace?.id == workspaceId
-                                
+                            if let role = workspaceRoles[workspaceId], 
+                               workspaceId != appState.currentWorkspace?.id {
                                 Button(action: {
                                     selectWorkspace(id: workspaceId, role: role)
                                     isPresented = false
                                 }) {
-                                    HStack {
-                                        Text(formatWorkspaceName(workspaceId))
-                                            .fontWeight(isCurrentWorkspace ? .bold : .regular)
+                                    HStack(spacing: 12) {
+                                        // Workspace icon
+                                        ZStack {
+                                            Circle()
+                                                .fill(roleColor(for: role).opacity(0.2))
+                                                .frame(width: 32, height: 32)
+                                            
+                                            Text(String(formatWorkspaceName(workspaceId).prefix(2)).uppercased())
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(roleColor(for: role))
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(formatWorkspaceName(workspaceId))
+                                                .font(.system(size: 15))
+                                                .foregroundColor(.primary)
+                                            
+                                            Text(role.capitalized)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
                                         
                                         Spacer()
                                         
-                                        Text(role.capitalized)
+                                        Image(systemName: "chevron.right")
                                             .font(.caption)
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 2)
-                                            .background(roleColor(for: role))
-                                            .cornerRadius(4)
+                                            .foregroundColor(.secondary)
                                     }
                                 }
-                                .foregroundColor(.primary)
-                                .listRowBackground(isCurrentWorkspace ? Color.accentColor.opacity(0.1) : Color.clear)
                             }
                         }
+                        
+                        Button(action: {
+                            // Show workspace selector
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("ShowWorkspaceSelector"),
+                                object: nil
+                            )
+                            isPresented = false
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(.blue)
+                                
+                                Text("Browse All Workspaces")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.top, 4)
+                    } header: {
+                        Text("YOUR WORKSPACES")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
                 
-                Section(header: Text("SETTINGS")) {
+                // Settings Section
+                Section {
                     Button(action: {
-                        appState.logout()
-                        isPresented = false
+                        showLogoutConfirmation = true
                     }) {
-                        Label("Logout", systemImage: "arrow.right.square")
-                            .foregroundColor(.red)
+                        HStack {
+                            Image(systemName: "arrow.right.square")
+                                .foregroundColor(.red)
+                                .font(.system(size: 16))
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Logout")
+                                .foregroundColor(.red)
+                        }
                     }
                     
                     Button(action: {
-                        // Show workspace selector
-                        NotificationCenter.default.post(
-                            name: NSNotification.Name("ShowWorkspaceSelector"),
-                            object: nil
-                        )
-                        isPresented = false
+                        // Show tokens
                     }) {
-                        Label("Switch Workspace", systemImage: "rectangle.stack.fill")
+                        HStack {
+                            Image(systemName: "key.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 16))
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Show Tokens")
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
                     }
+                } header: {
+                    Text("SETTINGS")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             .listStyle(InsetGroupedListStyle())
-            .navigationTitle("Menu")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        isPresented = false
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-            .onAppear {
-                // Load workspace roles from token
-                workspaceRoles = TokenManager.shared.getWorkspaceRoles()
-            }
+        }
+        .alert(isPresented: $showLogoutConfirmation) {
+            Alert(
+                title: Text("Confirm Logout"),
+                message: Text("Are you sure you want to log out of your account?"),
+                primaryButton: .destructive(Text("Logout")) {
+                    appState.logout()
+                    isPresented = false
+                },
+                secondaryButton: .cancel()
+            )
+        }
+        .onAppear {
+            // Load workspace roles from token
+            workspaceRoles = TokenManager.shared.getWorkspaceRoles()
         }
     }
     
@@ -183,6 +292,38 @@ struct SidebarMobileView: View {
         default:
             return .gray
         }
+    }
+}
+
+struct NavigationRow: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(isSelected ? .blue : .secondary)
+                    .frame(width: 24, height: 24)
+                
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundColor(isSelected ? .blue : .primary)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .listRowBackground(isSelected ? Color.blue.opacity(0.1) : Color.clear)
     }
 }
 
