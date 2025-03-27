@@ -112,48 +112,49 @@ struct ChatBubble: View {
     }
     
     var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
+        VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 2) {
             if !message.isFromUser {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.blue)
+                Text(agentName)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
             }
             
-            VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 2) {
-                if !message.isFromUser {
-                    Text(agentName)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 2)
+            // Use our custom MarkdownText renderer instead of Text
+            MarkdownText(text: message.text, isFromUser: message.isFromUser)
+                .id("text-\(message.id)-\(message.text.hashValue)")
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(message.isFromUser ? 
+                            Color.blue : 
+                            Color(UIColor(red: 1.0, green: 0.97, blue: 0.93, alpha: 1.0)))
+                .cornerRadius(20)
+                .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: message.isFromUser ? .trailing : .leading)
+                .onChange(of: message.text) { newText in
+                    // Force state update when message text changes
+                    currentText = newText
                 }
-                
-                // Use our custom MarkdownText renderer instead of Text
-                MarkdownText(text: message.text, isFromUser: message.isFromUser)
-                    .id("text-\(message.id)-\(message.text.hashValue)")
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(message.isFromUser ? 
-                                Color.blue : 
-                                Color(UIColor(red: 1.0, green: 0.97, blue: 0.93, alpha: 1.0)))
-                    .cornerRadius(20)
-                    .frame(maxWidth: message.isFromUser ? UIScreen.main.bounds.width * 0.75 : UIScreen.main.bounds.width * 0.85, alignment: message.isFromUser ? .trailing : .leading)
-                    .onChange(of: message.text) { newText in
-                        // Force state update when message text changes
-                        currentText = newText
-                    }
+            
+            HStack(alignment: .center, spacing: 8) {
+                if !message.isFromUser {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.blue)
+                }
                 
                 Text(formatTime(message.timestamp))
                     .font(.caption2)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
+                
+                if message.isFromUser {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.green)
+                }
             }
-            
-            if message.isFromUser {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.green)
-            }
+            .padding(.horizontal, 8)
+            .padding(.top, 2)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

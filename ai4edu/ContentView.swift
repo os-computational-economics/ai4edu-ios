@@ -93,11 +93,11 @@ struct MainView: View {
                             // Main tab
                             Spacer()
                             Button(action: { selectedTab = 0 }) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 2) {
                                     Image(systemName: "square.grid.2x2")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 16))
                                     Text("Main")
-                                        .font(.caption)
+                                        .font(.system(size: 10))
                                 }
                                 .foregroundColor(selectedTab == 0 ? .blue : .gray)
                             }
@@ -106,17 +106,17 @@ struct MainView: View {
                             
                             // Settings tab
                             Button(action: { selectedTab = 1 }) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 2) {
                                     Image(systemName: "gear")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 16))
                                     Text("Settings")
-                                        .font(.caption)
+                                        .font(.system(size: 10))
                                 }
                                 .foregroundColor(selectedTab == 1 ? .blue : .gray)
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 5)
                         .background(Color(.systemBackground))
                         .overlay(
                             Divider(),
@@ -196,11 +196,11 @@ struct MainView: View {
                         HStack {
                             Spacer()
                             Button(action: { selectedTab = 0 }) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 2) {
                                     Image(systemName: "folder.fill")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 16))
                                     Text("Workspaces")
-                                        .font(.caption)
+                                        .font(.system(size: 10))
                                 }
                                 .foregroundColor(selectedTab == 0 ? .blue : .gray)
                             }
@@ -208,17 +208,17 @@ struct MainView: View {
                             Spacer()
                             
                             Button(action: { selectedTab = 1 }) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 2) {
                                     Image(systemName: "gear")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 16))
                                     Text("Settings")
-                                        .font(.caption)
+                                        .font(.system(size: 10))
                                 }
                                 .foregroundColor(selectedTab == 1 ? .blue : .gray)
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 5)
                         .background(Color(.systemBackground))
                         .overlay(
                             Divider(),

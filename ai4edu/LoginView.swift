@@ -88,21 +88,6 @@ struct LoginView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                     }
                     .disabled(isLoggingIn)
-                    Button(action: {
-                        handleSSOLogin()
-                    }) {
-                        HStack(spacing: 8) {
-                            Text("Sign in with Google Account")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(height: 50)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                    }
-                    .disabled(true)
                     
                     if isLoggingIn {
                         ProgressView()
