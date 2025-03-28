@@ -18,6 +18,7 @@ struct Message: Identifiable {
     var MsgId: String?
     var sources: [Source]?
     var currentChatSession: Bool?
+    var role: String? // Store the message role: "human" or "openai"
 }
 
 // MARK: - API Response Types

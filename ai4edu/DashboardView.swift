@@ -30,8 +30,6 @@ struct DashboardView: View {
                 }
             case .chatHistory:
                 ThreadHistoryView()
-            case .accessControl:
-                AccessControlView()
             case .none:
                 AgentsView()
             case .some(.dashboard):
@@ -167,16 +165,7 @@ struct SidebarView: View {
                     ) {
                         Label("Chat History", systemImage: "bubble.left.and.bubble.right")
                     }
-                    
-                    if workspace.role == "admin" {
-                        NavigationLink(
-                            destination: AccessControlView(),
-                            tag: AppTab.accessControl,
-                            selection: $appState.currentTab
-                        ) {
-                            Label("Access Control", systemImage: "lock.shield")
-                        }
-                    }
+                
                 }
             }
             
@@ -316,13 +305,7 @@ struct SidebarView: View {
         // Save selected course and update app state
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
-        
-        // Navigate to appropriate screen based on role
-        if role.lowercased() == "admin" {
-            appState.currentTab = .accessControl
-        } else {
-            appState.currentTab = .agents
-        }
+
     }
     
     private func formatWorkspaceName(_ id: String) -> String {
@@ -774,19 +757,6 @@ struct AgentCard: View {
     }
 }
 
-struct ChatHistoryPlaceholderView: View {
-    var body: some View {
-        Text("Chat History Placeholder")
-            .font(.largeTitle)
-    }
-}
-
-struct AccessControlView: View {
-    var body: some View {
-        Text("Access Control")
-            .font(.largeTitle)
-    }
-}
 
 struct WorkspaceRolesView: View {
     let workspaceRoles: [String: String]
@@ -884,13 +854,7 @@ struct WorkspaceRolesView: View {
         // Save selected course
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
-        
-        // Navigate to appropriate screen based on role
-        if role.lowercased() == "admin" {
-            appState.currentTab = .accessControl
-        } else {
-            appState.currentTab = .agents
-        }
+
     }
     
     // Helper to get a friendly workspace name from ID

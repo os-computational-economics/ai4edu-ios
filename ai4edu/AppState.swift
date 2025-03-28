@@ -12,7 +12,6 @@ import SwiftUI
 enum AppTab {
     case dashboard
     case agents
-    case accessControl
     case chatHistory
     case settings
     case roster

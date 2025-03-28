@@ -138,7 +138,8 @@ class ChatService {
                         content: apiMessage.content,
                         align: apiMessage.role == "human" ? "end" : "start",
                         user_id: apiMessage.userId,
-                        MsgId: apiMessage.msgId
+                        MsgId: apiMessage.msgId,
+                        role: apiMessage.role
                     )
                 }
                 

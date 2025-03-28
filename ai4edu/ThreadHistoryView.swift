@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Foundation
-import Combine
 
 struct ThreadHistoryView: View {
     @EnvironmentObject private var appState: AppState
@@ -15,7 +14,6 @@ struct ThreadHistoryView: View {
     @State private var threads: [ThreadInfo] = []
     @State private var selectedThread: ThreadInfo? = nil
     @State private var navigateToThreadDetail: Bool = false
-    @State private var showFullscreenChat: Bool = false
     @State private var currentPage: Int = 1
     @State private var pageSize: Int = 20
     @State private var totalThreads: Int = 0
@@ -26,116 +24,110 @@ struct ThreadHistoryView: View {
     @State private var showDebugAlert: Bool = false
     @State private var debugMessage: String = ""
     @State private var currentWorkspaceId: String = ""
-    @State private var cancellables = Set<AnyCancellable>()
     
     var body: some View {
-        ZStack {
-            // Main thread history content
-            NavigationView {
-                VStack(spacing: 0) {
-                    // Thread list content
-                    if isLoading && threads.isEmpty {
-                        // Loading state
-                        Spacer()
-                        ProgressView("Loading chat history...")
-                        Spacer()
-                    } else if let error = errorMessage, threads.isEmpty {
-                        // Error state
-                        Spacer()
-                        VStack(spacing: 16) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 50))
-                                .foregroundColor(.orange)
-                            
-                            Text("Could not load chat history")
-                                .font(.headline)
-                            
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                            
-                            Button(action: {
-                                refreshThreads()
-                            }) {
-                                Text("Try Again")
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 10)
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        .padding()
-                        Spacer()
-                    } else if threads.isEmpty {
-                        // Empty state
-                        Spacer()
-                        VStack(spacing: 16) {
-                            Image(systemName: "bubble.left.and.bubble.right")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray.opacity(0.5))
-                            
-                            Text("No Chat History")
-                                .font(.headline)
-                            
-                            Text("Start a conversation with an agent to see your chat history here.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-                        .padding()
-                        Spacer()
-                    } else {
-                        // Thread list
-                        ScrollView {
-                            LazyVStack(spacing: 0) {
-                                ForEach(threads) { thread in
-                                    ThreadListItem(thread: thread)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            print("Selected thread: \(thread.threadId)")
-                                            selectedThread = thread
-                                            showFullscreenChat = true
-                                        }
-                                    
-                                    Divider()
-                                        .padding(.leading)
-                                }
-                                
-                                // Load more trigger
-                                loadMoreTrigger
-                            }
-                        }
-                        .refreshable {
-                            await refreshThreadsAsync()
+        NavigationView {
+            VStack(spacing: 0) {
+                // Thread list content
+                if isLoading && threads.isEmpty {
+                    // Loading state
+                    Spacer()
+                    ProgressView("Loading chat history...")
+                    Spacer()
+                } else if let error = errorMessage, threads.isEmpty {
+                    // Error state
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
+                        
+                        Text("Could not load chat history")
+                            .font(.headline)
+                        
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            refreshThreads()
+                        }) {
+                            Text("Try Again")
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
                         }
                     }
-                }
-                .navigationBarTitle("Chat History", displayMode: .inline)
-                .navigationBarHidden(true)
-            }
-            .navigationViewStyle(StackNavigationViewStyle())
-            
-            // Fullscreen chat overlay
-            if showFullscreenChat, let thread = selectedThread {
-                ZStack {
-                    // Fullscreen chat detail
-                    ChatThreadDetailView(thread: thread)
-                        .edgesIgnoringSafeArea(.all)
-                        .onDisappear {
-                            showFullscreenChat = false
+                    .padding()
+                    Spacer()
+                } else if threads.isEmpty {
+                    // Empty state
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray.opacity(0.5))
+                        
+                        Text("No Chat History")
+                            .font(.headline)
+                        
+                        Text("Start a conversation with an agent to see your chat history here.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .padding()
+                    Spacer()
+                } else {
+                    // Thread list
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(threads) { thread in
+                                ThreadListItem(thread: thread)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        print("Selected thread: \(thread.threadId)")
+                                        selectedThread = thread
+                                        navigateToThreadDetail = true
+                                    }
+                                
+                                Divider()
+                                    .padding(.leading)
+                            }
+                            
+                            // Load more trigger
+                            loadMoreTrigger
                         }
+                    }
+                    .refreshable {
+                        await refreshThreadsAsync()
+                    }
                 }
-                .transition(.move(edge: .trailing))
-                .zIndex(1)
+                
+                // Navigate to thread detail
+                NavigationLink(
+                    destination: Group {
+                        if let thread = selectedThread {
+                            ChatThreadDetailView(thread: thread)
+                                .navigationBarHidden(true)
+                        }
+                    },
+                    isActive: $navigateToThreadDetail
+                ) {
+                    EmptyView()
+                }
             }
+            .navigationBarTitle("Chat History", displayMode: .inline)
+            .navigationBarHidden(true)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             loadThreadsIfNeeded()
-            setupNotificationListeners()
         }
         .onChange(of: appState.currentWorkspace?.id) { newId in
             // Reload threads when workspace changes
@@ -151,56 +143,6 @@ struct ThreadHistoryView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-    }
-    
-    // MARK: - Notification Setup
-    
-    private func setupNotificationListeners() {
-        // Clean up any existing subscriptions
-        cancellables.removeAll()
-        
-        // Listen for notifications to show agent detail with a thread
-        NotificationCenter.default
-            .publisher(for: NSNotification.Name("ShowAgentDetailWithThread"))
-            .receive(on: DispatchQueue.main)
-            .sink { notification in
-                print("📱 THREAD-HISTORY - Received notification to show agent detail")
-                
-                guard let userInfo = notification.userInfo,
-                      let agent = userInfo["agent"] as? Agent,
-                      let threadId = userInfo["threadId"] as? String else {
-                    print("📱 THREAD-HISTORY - Missing required agent or threadId in notification")
-                    return
-                }
-                
-                // If we're showing a thread detail, navigate back first
-                if navigateToThreadDetail {
-                    navigateToThreadDetail = false
-                    
-                    // Wait a moment for the navigation to complete before posting to MainTabView
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        forwardNotificationToMainTabView(agent: agent, threadId: threadId)
-                    }
-                } else {
-                    // Just forward the notification
-                    forwardNotificationToMainTabView(agent: agent, threadId: threadId)
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func forwardNotificationToMainTabView(agent: Agent, threadId: String) {
-        // Forward notification to MainTabView to handle showing the agent
-        NotificationCenter.default.post(
-            name: NSNotification.Name("SwitchToAgentTab"),
-            object: nil,
-            userInfo: [
-                "agent": agent,
-                "threadId": threadId
-            ]
-        )
-        
-        print("📱 THREAD-HISTORY - Forwarded notification to main tab view with agent: \(agent.agentName), threadId: \(threadId)")
     }
     
     // Load more trigger view

@@ -324,33 +324,6 @@ struct MainView: View {
                     }
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(
-                for: NSNotification.Name("SwitchToAgentTab"))
-            ) { notification in
-                print("📱 MAIN-VIEW - Received notification to switch to agent tab")
-                
-                // First switch to Agents tab if we're not already there
-                if appState.currentTab != .agents {
-                    appState.currentTab = .agents
-                }
-                
-                // Then process the agent and thread ID for continue chat
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    if let agent = notification.userInfo?["agent"] as? Agent,
-                       let threadId = notification.userInfo?["threadId"] as? String {
-                        print("📱 MAIN-VIEW - Setting up navigation to agent: \(agent.agentName), thread: \(threadId)")
-                        
-                        // Set values first, then trigger navigation
-                        self.agentForContinue = agent
-                        self.threadIdForContinue = threadId
-                        
-                        // Use short delay to ensure state is updated before navigation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.navigateToAgentDetail = true
-                        }
-                    }
-                }
-            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .preferredColorScheme(appState.isDarkMode ? .dark : .light)
@@ -386,15 +359,6 @@ struct MainView: View {
                         isSelected: appState.currentTab == .chatHistory,
                         action: { appState.currentTab = .chatHistory }
                     )
-                    
-                    if appState.currentWorkspace?.role.lowercased() == "admin" {
-                        NavigationTabButton(
-                            title: "Access Control",
-                            icon: "lock.shield.fill",
-                            isSelected: appState.currentTab == .accessControl,
-                            action: { appState.currentTab = .accessControl }
-                        )
-                    }
                     
                     Spacer()
                 }
@@ -583,13 +547,6 @@ struct MainView: View {
         // Save selected course
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
-        
-        // Navigate to appropriate screen based on role
-        if role.lowercased() == "admin" {
-            appState.currentTab = .accessControl
-        } else {
-            appState.currentTab = .agents
-        }
     }
     
     // Helper to get a friendly workspace name from ID

@@ -91,16 +91,6 @@ struct AgentDetailView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
-                            
-                            // Show thread ID if continuing conversation
-                            if let threadId = currentThreadId {
-                                Divider()
-                                    .frame(height: 16)
-                                
-                                Text("Thread: \(threadId.prefix(8))...")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
                         }
                     }
                     
@@ -129,8 +119,7 @@ struct AgentDetailView: View {
                         )
                     }
                     
-                    // Only show Files tab for non-students and if files exist
-                    if !isStudent && !agent.agentFiles.isEmpty {
+                    if !agent.agentFiles.isEmpty {
                         TabButton(
                             title: "Files",
                             systemImage: "doc.on.doc",
@@ -575,8 +564,16 @@ struct AgentDetailView: View {
     }
     
     private func sendMessageToThread(_ messageText: String, threadId: String) {
+        print("📱 AGENT-DETAIL - Sending message to thread: \(threadId)")
+        
         // Convert existing messages to the format required by the API
         var previousMessages: [[String: Any]] = []
+        
+        // If we need to fetch thread messages from API first, use this endpoint
+        if messages.isEmpty {
+            let apiUrl = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
+            print("📱 AGENT-DETAIL - Thread history available at: \(apiUrl)")
+        }
         
         // Add all previous messages from the conversation
         for (index, message) in messages.enumerated() {
@@ -744,6 +741,11 @@ struct AgentDetailView: View {
         // Ensure we have valid thread ID saved
         currentThreadId = threadId
         
+        // API endpoint from requirements
+        let apiEndpoint = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
+        print("📱 AGENT-DETAIL - Using API endpoint: \(apiEndpoint)")
+        
+        // Use the existing ChatService to load messages
         ChatService.shared.getThreadMessages(threadId: threadId) { result in
             // Make sure we're on the main thread
             DispatchQueue.main.async {
@@ -771,7 +773,8 @@ struct AgentDetailView: View {
                     
                     // Convert API messages to ChatMessage format
                     let chatMessages = apiMessages.map { message -> ChatMessage in
-                        let isFromUser = message.align == "end"
+                        // Use the role directly, or fall back to the align property
+                        let isFromUser = message.role == "human" || (message.role == nil && message.align == "end")
                         let timestamp = self.parseTimestamp(from: message.id)
                         
                         return ChatMessage(

@@ -19,71 +19,62 @@ struct ChatThreadDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with more detailed information - matching AgentDetailView style
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center) {
-                    // Back button
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .padding(6)
-                            .background(Color(.systemGray5).opacity(0.8))
-                            .clipShape(Circle())
-                    }
-                    .padding(.trailing, 8)
+            // Header with thread info and continue chat button
+            HStack {
+                // Back button
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                .padding(.trailing, 8)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(thread.agentName)
+                        .font(.headline)
                     
-                    // Agent name and thread info
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(thread.agentName)
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        
-                        Text("Thread: \(thread.threadId.prefix(8))...")
+                    HStack {
+                        Text(formatWorkspaceId(thread.workspaceId))
                             .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Continue chat button
-                    Button(action: {
-                        presentContinueChat()
-                    }) {
-                        Label("Continue", systemImage: "arrow.right.circle")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(20)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(4)
                     }
                 }
+                
+                Spacer()
+                
+                // Continue chat button
+                Button(action: {
+                    presentContinueChat()
+                }) {
+                    Label("Continue Chat", systemImage: "arrow.right.circle")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                }
+
             }
             .padding()
             .background(Color(UIColor.systemBackground))
-            .overlay(
-                Divider(),
-                alignment: .bottom
-            )
             
-            // Content
+            Divider()
+            
             if isLoading {
                 Spacer()
                 ProgressView("Loading messages...")
-                    .padding(.top, 40)
                 Spacer()
             } else if let error = errorMessage {
                 Spacer()
                 VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle")
+                    Image(systemName: "exclamationmark.circle")
                         .font(.system(size: 50))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.red)
                     
                     Text("Error loading messages")
                         .font(.headline)
@@ -93,16 +84,14 @@ struct ChatThreadDetailView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
                     
-                    Button(action: {
+                    Button("Try Again") {
                         loadMessages()
-                    }) {
-                        Text("Try Again")
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -122,16 +111,14 @@ struct ChatThreadDetailView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
                     
-                    Button(action: {
+                    Button("Continue Chat") {
                         presentContinueChat()
-                    }) {
-                        Text("Continue Chat")
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -183,7 +170,6 @@ struct ChatThreadDetailView: View {
                 EmptyView()
             }
         }
-        .edgesIgnoringSafeArea(.bottom)
         .background(Color(UIColor.systemGray6))
         .onAppear {
             loadMessages()
@@ -246,77 +232,54 @@ struct ChatThreadDetailView: View {
     private func presentContinueChat() {
         print("📱 THREAD-DETAIL - Continue chat button pressed for thread: \(thread.threadId)")
         
-        // Create a dummy agent for display purposes
-        let dummyAgent = Agent(
-            agentId: thread.agentId,
-            agentName: thread.agentName,
-            workspaceId: thread.workspaceId,
-            voice: false,
-            allowModelChoice: false,
-            model: "",
-            agentFiles: [:],
-            status: 1,
-            createdAt: "",
-            creator: "",
-            updatedAt: "",
-            systemPrompt: ""
-        )
+        // Show loading state if needed
+        isLoading = true
         
-        // First dismiss this view
-        presentationMode.wrappedValue.dismiss()
-        
-        // Then post notification to show agent detail with thread
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            print("📱 THREAD-DETAIL - Posting notification to continue chat with thread: \(self.thread.threadId)")
-            
-            // Post notification for MainTabView to switch to the agent tab
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SwitchToAgentTab"),
-                object: nil,
-                userInfo: [
-                    "agent": dummyAgent,
-                    "threadId": self.thread.threadId
-                ]
-            )
+        // Fetch the full agent details from the API
+        ChatService.shared.getAgentDetails(agentId: thread.agentId) { result in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                switch result {
+                case .success(let agent):
+                    print("📱 THREAD-DETAIL - Successfully loaded agent: \(agent.agentName) for thread: \(self.thread.threadId)")
+                    // Set the agent and trigger navigation
+                    self.agentForContinue = agent
+                    
+                    // Use a short delay to ensure state is updated
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(self.thread.threadId)")
+                        self.navigateToContinueChat = true
+                    }
+                    
+                case .failure(let error):
+                    print("📱 THREAD-DETAIL - Error loading agent details: \(error)")
+                    // Handle error - fallback to using limited information we have
+                    let fallbackAgent = Agent(
+                        agentId: self.thread.agentId,
+                        agentName: self.thread.agentName,
+                        workspaceId: self.thread.workspaceId,
+                        voice: false,
+                        allowModelChoice: false,
+                        model: "",
+                        agentFiles: [:],
+                        status: 1,
+                        createdAt: "",
+                        creator: "",
+                        updatedAt: "",
+                        systemPrompt: ""
+                    )
+                    
+                    self.agentForContinue = fallbackAgent
+                    
+                    // Still proceed with navigation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(self.thread.threadId) using fallback agent")
+                        self.navigateToContinueChat = true
+                    }
+                }
+            }
         }
-    }
-}
-
-// MARK: - Continue Chat View
-
-struct ContinueChatView: View {
-    let agentId: String
-    let threadId: String
-    let agentName: String
-    
-    @State private var messages: [Message] = []
-    @State private var isLoading: Bool = true
-    @State private var errorMessage: String? = nil
-    
-    var body: some View {
-        // This view will now be unused since we're going directly to AgentDetailView
-        // Keep minimal implementation for backward compatibility
-        AgentDetailView(
-            agent: Agent(
-                agentId: agentId,
-                agentName: agentName,
-                workspaceId: "",
-                voice: false,
-                allowModelChoice: false,
-                model: "",
-                agentFiles: [:],
-                status: 1,
-                createdAt: "",
-                creator: "",
-                updatedAt: "",
-                systemPrompt: ""
-            ),
-            initialThreadId: threadId
-        )
-    }
-    
-    private func loadThreadMessages() {
-        // Not used anymore
     }
 }
 
