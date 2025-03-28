@@ -10,6 +10,7 @@ import Combine
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
+    @State private var isAnimating: Bool = false
     
     var body: some View {
         Group {
@@ -17,12 +18,21 @@ struct ContentView: View {
                 MainView()
                     .environmentObject(appState)
                     .preferredColorScheme(appState.isDarkMode ? .dark : .light)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
+                    ))
             } else {
                 LoginView()
                     .environmentObject(appState)
                     .preferredColorScheme(appState.isDarkMode ? .dark : .light)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .leading)),
+                        removal: .opacity.combined(with: .move(edge: .trailing))
+                    ))
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: appState.isLoggedIn)
         .onAppear {
             appState.checkLoginStatus()
         }
@@ -37,6 +47,7 @@ struct MainView: View {
     @State private var navigateToAgentDetail: Bool = false
     @State private var agentForContinue: Agent? = nil
     @State private var threadIdForContinue: String? = nil
+    @State private var hideTabBar: Bool = false
     
     var body: some View {
         NavigationView {
@@ -45,10 +56,10 @@ struct MainView: View {
                     // Main App Content with Integrated Navigation
                     VStack(spacing: 0) {
                         // Current workspace name banner
-                        if let workspace = appState.currentWorkspace {
+                        if let workspace = appState.currentWorkspace, !hideTabBar {
                             HStack {
                                 // Workspace icon
-        ZStack {
+                                ZStack {
                                     Circle()
                                         .fill(roleColor(for: workspace.role).opacity(0.2))
                                         .frame(width: 26, height: 26)
@@ -89,65 +100,42 @@ struct MainView: View {
                         }
                         
                         // Bottom tab bar
-                        HStack {
-                            // Main tab
-                            Spacer()
-                            Button(action: { selectedTab = 0 }) {
-                                VStack(spacing: 2) {
-                                    Image(systemName: "square.grid.2x2")
-                                        .font(.system(size: 16))
-                                    Text("Main")
-                                        .font(.system(size: 10))
+                        if !hideTabBar {
+                            HStack {
+                                // Main tab
+                                Spacer()
+                                Button(action: { selectedTab = 0 }) {
+                                    VStack(spacing: 2) {
+                                        Image(systemName: "square.grid.2x2")
+                                            .font(.system(size: 16))
+                                        Text("Main")
+                                            .font(.system(size: 10))
+                                    }
+                                    .foregroundColor(selectedTab == 0 ? .blue : .gray)
                                 }
-                                .foregroundColor(selectedTab == 0 ? .blue : .gray)
+                                
+                                Spacer()
+                                
+                                // Settings tab
+                                Button(action: { selectedTab = 1 }) {
+                                    VStack(spacing: 2) {
+                                        Image(systemName: "gear")
+                                            .font(.system(size: 16))
+                                        Text("Settings")
+                                            .font(.system(size: 10))
+                                    }
+                                    .foregroundColor(selectedTab == 1 ? .blue : .gray)
+                                }
+                                Spacer()
                             }
-                            
-                            Spacer()
-                            
-                            // Settings tab
-                            Button(action: { selectedTab = 1 }) {
-                                VStack(spacing: 2) {
-                                    Image(systemName: "gear")
-                                        .font(.system(size: 16))
-                                    Text("Settings")
-                                        .font(.system(size: 10))
-                                }
-                                .foregroundColor(selectedTab == 1 ? .blue : .gray)
-                            }
-                            Spacer()
+                            .padding(.vertical, 5)
+                            .background(Color(.systemBackground))
+                            .overlay(
+                                Divider(),
+                                alignment: .top
+                            )
                         }
-                        .padding(.vertical, 5)
-                        .background(Color(.systemBackground))
-                        .overlay(
-                            Divider(),
-                            alignment: .top
-                        )
                     }
-                .onAppear {
-                    // Get workspace roles from token
-                    workspaceRoles = TokenManager.shared.getWorkspaceRoles()
-                    
-                    if let accessToken = TokenManager.shared.getAccessToken(),
-                       let refreshToken = TokenManager.shared.getRefreshToken() {
-                        print("=== Current Tokens ===")
-                        print("Access Token: \(accessToken)")
-                        print("Refresh Token: \(refreshToken)")
-                        print("====================")
-                    }
-                    }
-                    .background(
-                        NavigationLink(
-                            destination: Group {
-                                if let agent = agentForContinue, let threadId = threadIdForContinue {
-                                    AgentDetailView(agent: agent, initialThreadId: threadId)
-                                        .navigationBarHidden(true)
-                                }
-                            },
-                            isActive: $navigateToAgentDetail
-                        ) {
-                            EmptyView()
-                        }
-                    )
                 } else {
                     // Home page with two-column layout
                     VStack(spacing: 0) {
@@ -324,49 +312,79 @@ struct MainView: View {
                     }
                 }
             }
+            .background(
+                NavigationLink(
+                    destination: Group {
+                        if let agent = agentForContinue, let threadId = threadIdForContinue {
+                            AgentDetailView(agent: agent, initialThreadId: threadId)
+                                .navigationBarHidden(true)
+                        }
+                    },
+                    isActive: $navigateToAgentDetail
+                ) {
+                    EmptyView()
+                }
+            )
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .preferredColorScheme(appState.isDarkMode ? .dark : .light)
+        .onAppear {
+            // Get workspace roles from token
+            workspaceRoles = TokenManager.shared.getWorkspaceRoles()
+            
+            // Setup notification observers for tab bar visibility
+            setupTabBarNotifications()
+            
+            if let accessToken = TokenManager.shared.getAccessToken(),
+               let refreshToken = TokenManager.shared.getRefreshToken() {
+                print("=== Current Tokens ===")
+                print("Access Token: \(accessToken)")
+                print("Refresh Token: \(refreshToken)")
+                print("====================")
+            }
+        }
     }
     
     // Main tab content (Agents, Roster, Chat History)
     private var mainTabContent: some View {
         VStack(spacing: 0) {
-            // Navigation sections
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 5) {
-                    NavigationTabButton(
-                        title: "Agents",
-                        icon: "person.text.rectangle.fill",
-                        isSelected: appState.currentTab == .agents,
-                        action: { appState.currentTab = .agents }
-                    )
-                    
-                    // Only show Roster tab for teachers and admins
-                    if let role = appState.currentWorkspace?.role,
-                       role.lowercased() == "teacher" || role.lowercased() == "admin" {
+            // Navigation sections - only show when not hiding tab bar
+            if !hideTabBar {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 5) {
                         NavigationTabButton(
-                            title: "Roster",
-                            icon: "person.2.fill",
-                            isSelected: appState.currentTab == .roster,
-                            action: { appState.currentTab = .roster }
+                            title: "Agents",
+                            icon: "person.text.rectangle.fill",
+                            isSelected: appState.currentTab == .agents,
+                            action: { appState.currentTab = .agents }
                         )
+                        
+                        // Only show Roster tab for teachers and admins
+                        if let role = appState.currentWorkspace?.role,
+                           role.lowercased() == "teacher" || role.lowercased() == "admin" {
+                            NavigationTabButton(
+                                title: "Roster",
+                                icon: "person.2.fill",
+                                isSelected: appState.currentTab == .roster,
+                                action: { appState.currentTab = .roster }
+                            )
+                        }
+                        
+                        NavigationTabButton(
+                            title: "Chat History",
+                            icon: "bubble.left.and.bubble.right.fill",
+                            isSelected: appState.currentTab == .chatHistory,
+                            action: { appState.currentTab = .chatHistory }
+                        )
+                        
+                        Spacer()
                     }
-                    
-                    NavigationTabButton(
-                        title: "Chat History",
-                        icon: "bubble.left.and.bubble.right.fill",
-                        isSelected: appState.currentTab == .chatHistory,
-                        action: { appState.currentTab = .chatHistory }
-                    )
-                    
-                    Spacer()
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+                
+                Divider()
             }
-            
-            Divider()
             
             // Dashboard content
             DashboardView()
@@ -579,6 +597,31 @@ struct MainView: View {
         default:
             return .gray
         }
+    }
+    
+    // Helper function to setup notification observers
+    private func setupTabBarNotifications() {
+        // Remove any existing observers first
+        NotificationCenter.default.removeObserver(self)
+        
+        // Add observers for tab bar visibility
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("HideTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = true
+                }
+            }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("ShowTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = false
+                }
+            }
     }
 }
 

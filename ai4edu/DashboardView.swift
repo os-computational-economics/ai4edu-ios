@@ -12,6 +12,7 @@ struct DashboardView: View {
     @State private var courses: [Course] = []
     @State private var workspaceRoles: [String: String] = [:]
     @State private var showTokenInformation: Bool = false
+    @State private var hideTabBar: Bool = false
     
     var body: some View {
         // Display the appropriate content based on the currently selected tab
@@ -41,7 +42,33 @@ struct DashboardView: View {
         .onAppear {
             loadData()
             TokenManager.shared.debugPrintToken()
+            setupTabBarNotifications()
         }
+    }
+    
+    // Helper function to setup notification observers
+    private func setupTabBarNotifications() {
+        // Remove any existing observers first
+        NotificationCenter.default.removeObserver(self)
+        
+        // Add observers for tab bar visibility
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("HideTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = true
+                }
+            }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("ShowTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = false
+                }
+            }
     }
     
     // View to show when access is restricted
@@ -353,6 +380,7 @@ struct AgentsView: View {
     @State private var showingAddNewAgent: Bool = false
     @State private var showAgentDetail: Bool = false
     @State private var currentWorkspaceId: String = ""
+    @State private var hideTabBar: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -367,8 +395,33 @@ struct AgentsView: View {
                 agentsTableView()
             }
         }
+        .overlay(
+            // Only show the add button for non-students and when tab bar is visible
+            VStack {
+                Spacer()
+                if let role = appState.currentWorkspace?.role, 
+                   role != "student" && !hideTabBar {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showingAddNewAgent = true
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Circle().fill(Color.blue))
+                                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+        )
         .onAppear {
             loadAgentsIfNeeded()
+            setupTabBarNotifications()
         }
         .onChange(of: appState.currentWorkspace?.id) { newId in
             // Reload agents when workspace changes
@@ -402,6 +455,31 @@ struct AgentsView: View {
             }
             .padding()
         }
+    }
+    
+    // Helper function to setup notification observers
+    private func setupTabBarNotifications() {
+        // Remove any existing observers first
+        NotificationCenter.default.removeObserver(self)
+        
+        // Add observers for tab bar visibility
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("HideTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = true
+                }
+            }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("ShowTabBar"),
+            object: nil,
+            queue: .main) { _ in
+                withAnimation {
+                    self.hideTabBar = false
+                }
+            }
     }
     
     private func emptyStateView() -> some View {

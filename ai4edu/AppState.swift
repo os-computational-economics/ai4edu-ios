@@ -34,10 +34,26 @@ class AppState: ObservableObject {
         self.isLoggedIn = TokenManager.shared.isLoggedIn()
     }
     
+    func login() {
+        // Update login state with a slight delay to allow for animations
+        // This method should be called after successful login
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation {
+                self.isLoggedIn = true
+                self.currentWorkspace = CourseManager.shared.getSelectedCourse()
+            }
+        }
+    }
+    
     func logout() {
+        // First animate the transition
+        withAnimation {
+            self.isLoggedIn = false
+            self.currentWorkspace = nil
+        }
+        
+        // Then clear actual tokens after animation starts
         TokenManager.shared.clearTokens()
-        self.isLoggedIn = false
-        self.currentWorkspace = nil
         CourseManager.shared.saveSelectedCourse(Course(id: "", role: "", name: ""))
     }
     

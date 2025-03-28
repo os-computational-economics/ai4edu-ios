@@ -14,6 +14,10 @@ struct LoginView: View {
     @State private var showWebView = false
     @EnvironmentObject private var appState: AppState
     @State private var animateBackground = false
+    @State private var cardOffset: CGFloat = 400
+    @State private var logoScale: CGFloat = 0.8
+    @State private var logoOpacity: Double = 0.0
+    @State private var buttonScale: CGFloat = 1.0
     
     var body: some View {
         ZStack {
@@ -39,11 +43,13 @@ struct LoginView: View {
                 
                 // Logo and app name
                 VStack(spacing: 20) {
-                    Image("AI4EDULogo")
+                    Image("AI4EDULogo_White")
                         .resizable()
                         .frame(width: 100, height: 100)
                         .cornerRadius(22)
                         .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                        .scaleEffect(logoScale)
+                        .opacity(logoOpacity)
                     
                     VStack(spacing: 8) {
                         Text("AI4EDU")
@@ -55,6 +61,7 @@ struct LoginView: View {
                             .fontWeight(.medium)
                             .foregroundColor(.white.opacity(0.8))
                     }
+                    .opacity(logoOpacity)
                 }
                 
                 Spacer()
@@ -74,7 +81,18 @@ struct LoginView: View {
                         .padding(.horizontal)
                     
                     Button(action: {
-                        handleSSOLogin()
+                        // Add press animation
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            buttonScale = 0.95
+                        }
+                        
+                        // Reset scale after a short delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                buttonScale = 1.0
+                            }
+                            handleSSOLogin()
+                        }
                     }) {
                         HStack(spacing: 12) {
                             Text("Sign in with CWRU Account")
@@ -87,6 +105,7 @@ struct LoginView: View {
                         .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                     }
+                    .scaleEffect(buttonScale)
                     .disabled(isLoggingIn)
                     
                     if isLoggingIn {
@@ -125,6 +144,7 @@ struct LoginView: View {
                         .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
                 )
                 .padding(.horizontal, 30)
+                .offset(y: cardOffset)
                 
                 Spacer()
                 
@@ -144,9 +164,21 @@ struct LoginView: View {
             
             if showWebView, let ssoURL = APIService.shared.getSSOURL(returnURL: "ai4edu://callback") {
                 SSOWebView(url: ssoURL, isPresented: $showWebView, onSuccessfulLogin: {
-                    appState.isLoggedIn = true
+                    // Trigger login with animation via AppState
+                    isLoggingIn = false
+                    appState.login()
                 })
-                .transition(.opacity)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.3), value: showWebView)
+                .zIndex(1) // Ensure WebView appears above other elements
+            }
+        }
+        .onAppear {
+            // Animate entry
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                cardOffset = 0
+                logoScale = 1.0
+                logoOpacity = 1.0
             }
         }
     }
@@ -154,9 +186,14 @@ struct LoginView: View {
     private func handleSSOLogin() {
         isLoggingIn = true
         
-        // Simulate a short delay for better UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            showWebView = true
+        // Add visual feedback with slight delay
+        withAnimation {
+            // Simulate a short delay for better UX
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation {
+                    showWebView = true
+                }
+            }
         }
     }
 }

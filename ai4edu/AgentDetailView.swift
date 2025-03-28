@@ -8,10 +8,81 @@
 import SwiftUI
 import Combine
 import Foundation
+import UIKit
+
+// UIKit representable to add keyboard toolbar for TextEditor
+struct KeyboardToolbar: UIViewRepresentable {
+    let doneAction: () -> Void
+    
+    func makeUIView(context: Context) -> UIToolbar {
+        let toolbar = UIToolbar(frame: .init(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: context.coordinator, action: #selector(Coordinator.doneButtonTapped))
+        
+        toolbar.items = [flexSpace, doneButton]
+        toolbar.sizeToFit()
+        
+        return toolbar
+    }
+    
+    func updateUIView(_ uiView: UIToolbar, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject {
+        let parent: KeyboardToolbar
+        
+        init(_ parent: KeyboardToolbar) {
+            self.parent = parent
+        }
+        
+        @objc func doneButtonTapped() {
+            parent.doneAction()
+        }
+    }
+}
+
+// MARK: - Keyboard Avoiding Modifier
+struct KeyboardAvoiding: ViewModifier {
+    @State private var keyboardHeight: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .padding(.bottom, keyboardHeight)
+            .animation(.easeOut(duration: 0.16), value: keyboardHeight)
+            .onAppear {
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
+                    let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? .zero
+                    let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+                    
+                    withAnimation(.easeOut(duration: animationDuration)) {
+                        self.keyboardHeight = keyboardFrame.height
+                    }
+                }
+                
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { notification in
+                    let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+                    
+                    withAnimation(.easeOut(duration: animationDuration)) {
+                        self.keyboardHeight = 0
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func avoidKeyboard() -> some View {
+        self.modifier(KeyboardAvoiding())
+    }
+}
 
 struct AgentDetailView: View {
     let agent: Agent
     var initialThreadId: String? = nil
+    var fullScreenMode: Bool = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var appState: AppState
     
@@ -95,42 +166,42 @@ struct AgentDetailView: View {
                     }
                     
                     Spacer()
-                    
-                    // No close button - removed as requested
                 }
                 
-                // Tab selector
-                HStack(spacing: 0) {
-                    TabButton(
-                        title: "Chat",
-                        systemImage: "bubble.left.and.bubble.right",
-                        isSelected: selectedTab == .chat,
-                        isEnabled: agent.status == 1,
-                        action: { selectedTab = .chat }
-                    )
-                    
-                    // Only show Details tab for non-students
-                    if !isStudent {
+                // Tab selector - only show if not in full screen mode
+                if !fullScreenMode {
+                    HStack(spacing: 0) {
                         TabButton(
-                            title: "Details",
-                            systemImage: "info.circle",
-                            isSelected: selectedTab == .details,
-                            action: { selectedTab = .details }
+                            title: "Chat",
+                            systemImage: "bubble.left.and.bubble.right",
+                            isSelected: selectedTab == .chat,
+                            isEnabled: agent.status == 1,
+                            action: { selectedTab = .chat }
                         )
+                        
+                        // Only show Details tab for non-students
+                        if !isStudent {
+                            TabButton(
+                                title: "Details",
+                                systemImage: "info.circle",
+                                isSelected: selectedTab == .details,
+                                action: { selectedTab = .details }
+                            )
+                        }
+                        
+                        if !agent.agentFiles.isEmpty {
+                            TabButton(
+                                title: "Files",
+                                systemImage: "doc.on.doc",
+                                isSelected: selectedTab == .files,
+                                action: { selectedTab = .files }
+                            )
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    if !agent.agentFiles.isEmpty {
-                        TabButton(
-                            title: "Files",
-                            systemImage: "doc.on.doc",
-                            isSelected: selectedTab == .files,
-                            action: { selectedTab = .files }
-                        )
-                    }
-                    
-                    Spacer()
+                    .padding(.top, 8)
                 }
-                .padding(.top, 8)
             }
             .padding()
             .background(Color(UIColor.systemBackground))
@@ -139,28 +210,40 @@ struct AgentDetailView: View {
                 alignment: .bottom
             )
             
-            // Content based on selected tab
-            TabView(selection: $selectedTab) {
+            // In full screen mode, always show chat view
+            if fullScreenMode {
                 chatView
-                    .tag(DetailTab.chat)
-                
-                if !isStudent {
-                    agentDetailsView
-                        .tag(DetailTab.details)
+            } else {
+                // Only use TabView if not in full screen mode
+                TabView(selection: $selectedTab) {
+                    chatView
+                        .tag(DetailTab.chat)
                     
-                    if !agent.agentFiles.isEmpty {
-                        filesView
-                            .tag(DetailTab.files)
+                    if !isStudent {
+                        agentDetailsView
+                            .tag(DetailTab.details)
+                        
+                        if !agent.agentFiles.isEmpty {
+                            filesView
+                                .tag(DetailTab.files)
+                        }
                     }
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .edgesIgnoringSafeArea(.bottom)
-        .navigationTitle("Agent Details")
+        .navigationTitle(fullScreenMode ? "" : "Agent Details")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(fullScreenMode)
         .background(Color(UIColor.secondarySystemBackground))
+        .statusBar(hidden: fullScreenMode)
         .onAppear {
+            // If in full screen mode, set a preference to hide tab bars
+            if fullScreenMode {
+                NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
+            }
+            
             print("📱 AGENT-DETAIL - View appeared for agent: \(agent.agentName), initialThreadId: \(String(describing: initialThreadId)), hasInitialized: \(hasInitialized)")
             
             // Only initialize once to prevent duplicate loading
@@ -180,6 +263,12 @@ struct AgentDetailView: View {
                 } else {
                     print("📱 AGENT-DETAIL - No initial thread ID, starting fresh conversation")
                 }
+            }
+        }
+        .onDisappear {
+            // Reset tab bar visibility when view disappears
+            if fullScreenMode {
+                NotificationCenter.default.post(name: NSNotification.Name("ShowTabBar"), object: nil)
             }
         }
     }
@@ -248,6 +337,25 @@ struct AgentDetailView: View {
                             }
                             .padding(.top)
                         }
+                        .simultaneousGesture(
+                            DragGesture().onChanged { _ in
+                                // Dismiss keyboard when scrolling
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                                              to: nil, 
+                                                              from: nil, 
+                                                              for: nil)
+                            }
+                        )
+                        .gesture(
+                            TapGesture()
+                                .onEnded { _ in
+                                    // Dismiss keyboard when tapping on messages
+                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                                                 to: nil, 
+                                                                 from: nil, 
+                                                                 for: nil)
+                                }
+                        )
                         .onChange(of: messages.count) { _ in
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
@@ -269,18 +377,55 @@ struct AgentDetailView: View {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
+                        // Add an onChange handler for the keyboard
+                        .onChange(of: messageText) { _ in
+                            if !messages.isEmpty {
+                                // Small delay to ensure keyboard is fully shown
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation {
+                                        scrollProxy.scrollTo("bottom", anchor: .bottom)
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                     // Enhanced input area
                     HStack(spacing: 12) {
-                        TextField("Type your message...", text: $messageText)
-                            .padding(12)
-                            .background(Color(UIColor.systemBackground))
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
+                        ZStack(alignment: .leading) {
+                            // Placeholder text
+                            if messageText.isEmpty {
+                                Text("Type your message...")
+                                    .foregroundColor(Color.gray.opacity(0.8))
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 8)
+                            }
+                            
+                            // Text editor with fixed height
+                            TextEditor(text: $messageText)
+                                .padding(.horizontal, 1)
+                                .frame(minHeight: 20, maxHeight: 120) // Limit height
+                                .cornerRadius(20)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .opacity(messageText.isEmpty ? 0.7 : 1)
+                                .background(
+                                    KeyboardToolbar {
+                                        // Dismiss keyboard action
+                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                                                      to: nil, 
+                                                                      from: nil, 
+                                                                      for: nil)
+                                    }
+                                    .frame(width: 0, height: 0)
+                                )
+                        }
+                        .padding(8)
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
                         
                         Button(action: sendMessage) {
                             ZStack {
@@ -296,13 +441,15 @@ struct AgentDetailView: View {
                         }
                         .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
                     }
-                    .padding()
+                    .padding([.horizontal, .bottom], 16)
+                    .padding(.top, 8)
                     .background(Color(UIColor.systemBackground))
                     .overlay(
                         Divider(),
                         alignment: .top
                     )
                 }
+                .avoidKeyboard() // Apply keyboard avoidance
             } else {
                 // Agent is disabled
                 VStack(spacing: 20) {
