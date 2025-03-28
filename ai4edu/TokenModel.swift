@@ -480,4 +480,42 @@ class TokenManager {
         
         return result
     }
+    
+    // Get user ID from token
+    func getUserID() -> String {
+        guard let tokenString = getAccessToken() else {
+            return "-1"
+        }
+        
+        do {
+            // Decode the JWT token
+            let jwt = try decode(jwt: tokenString)
+            
+            // Extract user_id - could be integer or string
+            let userIdClaim = jwt.claim(name: "user_id")
+            if let idInt = userIdClaim.rawValue as? Int {
+                return String(idInt)
+            } else if let idString = userIdClaim.string {
+                return idString
+            }
+        } catch {
+            print("DEBUG: Failed to decode JWT for user_id: \(error)")
+            
+            // Try manual decoding as fallback
+            let parts = tokenString.components(separatedBy: ".")
+            if parts.count >= 2 {
+                let payloadBase64 = parts[1]
+                if let payloadData = decodeBase64URLEncoded(payloadBase64),
+                   let payloadString = String(data: payloadData, encoding: .utf8),
+                   let jsonData = payloadString.data(using: .utf8),
+                   let json = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                    if let userId = json["user_id"] {
+                        return String(describing: userId)
+                    }
+                }
+            }
+        }
+        
+        return "-1"
+    }
 }

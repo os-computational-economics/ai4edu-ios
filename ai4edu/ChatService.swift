@@ -179,7 +179,7 @@ class ChatService {
         
         // Determine if user is admin/teacher or student
         let role = getUserRoleForWorkspace(workspaceId: workspaceId)
-        let userId = (role == "admin" || role == "teacher") ? "-1" : getCurrentStudentID()
+        let userId = (role == "admin" || role == "teacher") ? "-1" : getCurrentUserID()
         
         print("📱 CHAT-API - User role: \(role), Using user_id: \(userId)")
         
@@ -297,10 +297,10 @@ class ChatService {
             return
         }
         
-        // Get current student ID from our helper method
-        let studentId = getCurrentStudentID()
+        // Get current user ID
+        let userId = getCurrentUserID()
         
-        print("📱 CHAT-API - Sending message with studentId: \(studentId)")
+        print("📱 CHAT-API - Sending message with user_id: \(userId)")
         
         // Get agent details from local storage or parameters
         let model = "openai" // Default model if not specified in agent
@@ -329,7 +329,7 @@ class ChatService {
             "thread_id": threadId,
             "workspace_id": workspaceId,
             "provider": model,
-            "user_id": studentId,
+            "user_id": userId,
             "agent_id": agentId,
             "voice": voice
         ] as [String: Any]
@@ -479,12 +479,12 @@ class ChatService {
                 return
             }
             
-            // Get current student ID from our helper method
-            let studentId = getCurrentStudentID()
+            // Get current user ID
+            let userId = getCurrentUserID()
             
             print("📱 CHAT-API - [Stream] Starting API request")
             print("📱 CHAT-API - [Stream] URL: \(baseURL + endpoint)")
-            print("📱 CHAT-API - [Stream] Student ID: \(studentId)")
+            print("📱 CHAT-API - [Stream] User ID: \(userId)")
             print("📱 CHAT-API - [Stream] Thread ID: \(threadId)")
             print("📱 CHAT-API - [Stream] Agent ID: \(agentId)")
             print("📱 CHAT-API - [Stream] Workspace ID: \(workspaceId)")
@@ -513,7 +513,7 @@ class ChatService {
                 "thread_id": threadId,
                 "workspace_id": workspaceId,
                 "provider": "openai",
-                "user_id": studentId,
+                "user_id": userId,
                 "agent_id": agentId,
                 "voice": false
             ] as [String: Any]
@@ -654,12 +654,12 @@ class ChatService {
             return
         }
         
-        // Get current student ID from our helper method
-        let studentId = getCurrentStudentID()
+        // Get current user ID
+        let userId = getCurrentUserID()
         
         print("📱 CHAT-API - [StreamCallback] Starting API request")
         print("📱 CHAT-API - [StreamCallback] URL: \(baseURL + endpoint)")
-        print("📱 CHAT-API - [StreamCallback] Student ID: \(studentId)")
+        print("📱 CHAT-API - [StreamCallback] User ID: \(userId)")
         print("📱 CHAT-API - [StreamCallback] Thread ID: \(threadId)")
         
         // Create messages dictionary
@@ -685,7 +685,7 @@ class ChatService {
             "thread_id": threadId,
             "workspace_id": workspaceId,
             "provider": "openai",
-            "user_id": studentId,
+            "user_id": userId,
             "agent_id": agentId,
             "voice": false
         ] as [String: Any]
@@ -899,30 +899,26 @@ class ChatService {
     
     // MARK: - Helper Methods
     
-    /// Get the current user's student ID
-    func getCurrentStudentID() -> String {
-        // Try to get from UserDefaults
+    /// Get the current user's ID
+    func getCurrentUserID() -> String {
+        // Get user_id directly from JWT token
+        let userId = TokenManager.shared.getUserID()
+        if userId != "-1" {
+            return userId
+        }
+        
+        // For backward compatibility - try to get student_id from UserDefaults
         if let studentId = UserDefaults.standard.string(forKey: "studentId"),
            !studentId.isEmpty && studentId != "unknown" {
             return studentId
         }
         
-        // Fallback to Cookies if implemented
-        if let cookiesValue = UserDefaults.standard.string(forKey: "cookies") {
-            if cookiesValue.contains("student_id=") {
-                let components = cookiesValue.components(separatedBy: "student_id=")
-                if components.count > 1 {
-                    let idWithRemainder = components[1]
-                    if let endIndex = idWithRemainder.firstIndex(of: ";") {
-                        return String(idWithRemainder[..<endIndex])
-                    }
-                    return idWithRemainder
-                }
-            }
-        }
-        
-        // Default to "7" for testing to match expected format, instead of "unknown"
-        return "7"
+        return "-1"
+    }
+    
+    // Keep the old method for backward compatibility, but have it call the new method
+    func getCurrentStudentID() -> String {
+        return getCurrentUserID()
     }
     
     /// Get access token

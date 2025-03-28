@@ -236,8 +236,8 @@ struct ChatThreadDetailView: View {
     }
     
     private func checkIfCurrentUserThread() {
-        // Get the current user ID (student ID)
-        let currentUserId = ChatService.shared.getCurrentStudentID()
+        // Get the current user ID
+        let currentUserId = ChatService.shared.getCurrentUserID()
         
         // Convert thread.userId to String for comparison
         let threadUserId = String(thread.userId)
