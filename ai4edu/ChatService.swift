@@ -900,7 +900,7 @@ class ChatService {
     // MARK: - Helper Methods
     
     /// Get the current user's student ID
-    private func getCurrentStudentID() -> String {
+    func getCurrentStudentID() -> String {
         // Try to get from UserDefaults
         if let studentId = UserDefaults.standard.string(forKey: "studentId"),
            !studentId.isEmpty && studentId != "unknown" {

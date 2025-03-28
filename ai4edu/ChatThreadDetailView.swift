@@ -16,6 +16,7 @@ struct ChatThreadDetailView: View {
     @State private var errorMessage: String? = nil
     @State private var navigateToContinueChat: Bool = false
     @State private var agentForContinue: Agent? = nil
+    @State private var isCurrentUserThread: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -47,18 +48,19 @@ struct ChatThreadDetailView: View {
                 
                 Spacer()
                 
-                // Continue chat button
-                Button(action: {
-                    presentContinueChat()
-                }) {
-                    Label("Continue Chat", systemImage: "arrow.right.circle")
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(20)
+                // Continue chat button - only show if created by current user
+                if isCurrentUserThread {
+                    Button(action: {
+                        presentContinueChat()
+                    }) {
+                        Label("Continue Chat", systemImage: "arrow.right.circle")
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
+                    }
                 }
-
             }
             .padding()
             .background(Color(UIColor.systemBackground))
@@ -92,6 +94,26 @@ struct ChatThreadDetailView: View {
                     .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
+                    
+                    if isCurrentUserThread {
+                        Divider()
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 40)
+                        
+                        Text("Or continue the chat without loading past messages")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button("Continue Chat") {
+                            presentContinueChat()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
                 }
                 .padding()
                 Spacer()
@@ -106,19 +128,26 @@ struct ChatThreadDetailView: View {
                         .font(.headline)
                         .foregroundColor(.secondary)
                     
-                    Text("Continue the chat to start a conversation with this agent")
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                    
-                    Button("Continue Chat") {
-                        presentContinueChat()
+                    if isCurrentUserThread {
+                        Text("Continue the chat to start a conversation with this agent")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 40)
+                        
+                        Button("Continue Chat") {
+                            presentContinueChat()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    } else {
+                        Text("This thread was created by another user and has no messages yet")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 40)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -173,6 +202,7 @@ struct ChatThreadDetailView: View {
         .background(Color(UIColor.systemGray6))
         .onAppear {
             loadMessages()
+            checkIfCurrentUserThread()
         }
         .navigationBarHidden(true)
     }
@@ -194,6 +224,20 @@ struct ChatThreadDetailView: View {
                 print("Error loading thread messages: \(error)")
             }
         }
+    }
+    
+    private func checkIfCurrentUserThread() {
+        // Get the current user ID (student ID)
+        let currentUserId = ChatService.shared.getCurrentStudentID()
+        
+        // Convert thread.userId to String for comparison
+        let threadUserId = String(thread.userId)
+        
+        // Check if this thread was created by the current user
+        isCurrentUserThread = (threadUserId == currentUserId)
+        
+        print("📱 THREAD-DETAIL - Thread user ID: \(threadUserId), Current user ID: \(currentUserId)")
+        print("📱 THREAD-DETAIL - Is current user's thread: \(isCurrentUserThread)")
     }
     
     // Helper functions for formatting
