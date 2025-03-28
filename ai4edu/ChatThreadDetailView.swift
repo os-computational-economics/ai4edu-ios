@@ -191,7 +191,8 @@ struct ChatThreadDetailView: View {
                 destination: Group {
                     if let agent = agentForContinue {
                         AgentDetailView(agent: agent, initialThreadId: thread.threadId, fullScreenMode: true)
-                            .navigationBarHidden(true)
+                            // Remove direct hiding to maintain swipe gestures
+                            // Let AgentDetailView handle its own toolbar customization
                     }
                 },
                 isActive: $navigateToContinueChat
@@ -204,7 +205,15 @@ struct ChatThreadDetailView: View {
             loadMessages()
             checkIfCurrentUserThread()
         }
-        .navigationBarHidden(true)
+        // Replace direct hiding with toolbar approach to maintain swipe gestures
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Hide default navigation items but maintain swipe area
+            ToolbarItem(placement: .navigationBarLeading) {
+                // Empty view to keep swipe area but hide default back button
+                Color.clear.frame(width: 0, height: 0)
+            }
+        }
     }
     
     private func loadMessages() {

@@ -166,6 +166,17 @@ struct AgentDetailView: View {
                     }
                     
                     Spacer()
+                    
+                    // Full screen close button
+                    if fullScreenMode {
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
                 
                 // Tab selector - only show if not in full screen mode
@@ -235,13 +246,27 @@ struct AgentDetailView: View {
         .edgesIgnoringSafeArea(.bottom)
         .navigationTitle(fullScreenMode ? "" : "Agent Details")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(fullScreenMode)
-        .background(Color(UIColor.secondarySystemBackground))
-        .statusBar(hidden: fullScreenMode)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if fullScreenMode {
+                    // Empty view to keep swipe gesture area but hide default back button
+                    Color.clear.frame(width: 0, height: 0)
+                }
+            }
+        }
         .onAppear {
-            // If in full screen mode, set a preference to hide tab bars
             if fullScreenMode {
+                // Hide tab bar notification
                 NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
+                
+                // Make navigation bar transparent in full screen mode
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithTransparentBackground()
+                appearance.backgroundColor = .clear
+                appearance.shadowColor = .clear
+                UINavigationBar.appearance().standardAppearance = appearance
+                UINavigationBar.appearance().compactAppearance = appearance
+                UINavigationBar.appearance().scrollEdgeAppearance = appearance
             }
             
             print("📱 AGENT-DETAIL - View appeared for agent: \(agent.agentName), initialThreadId: \(String(describing: initialThreadId)), hasInitialized: \(hasInitialized)")
@@ -266,11 +291,20 @@ struct AgentDetailView: View {
             }
         }
         .onDisappear {
-            // Reset tab bar visibility when view disappears
+            // Reset navigation bar appearance when view disappears
             if fullScreenMode {
                 NotificationCenter.default.post(name: NSNotification.Name("ShowTabBar"), object: nil)
+                
+                // Reset navigation bar appearance
+                let standardAppearance = UINavigationBarAppearance()
+                standardAppearance.configureWithDefaultBackground()
+                UINavigationBar.appearance().standardAppearance = standardAppearance
+                UINavigationBar.appearance().compactAppearance = standardAppearance
+                UINavigationBar.appearance().scrollEdgeAppearance = standardAppearance
             }
         }
+        .background(Color(UIColor.secondarySystemBackground))
+        .statusBar(hidden: fullScreenMode)
     }
     
     // MARK: - Tab Views
