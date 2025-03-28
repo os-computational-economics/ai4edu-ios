@@ -19,62 +19,71 @@ struct ChatThreadDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with thread info and continue chat button
-            HStack {
-                // Back button
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.blue)
-                }
-                .padding(.trailing, 8)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(thread.agentName)
-                        .font(.headline)
+            // Header with more detailed information - matching AgentDetailView style
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center) {
+                    // Back button
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .padding(6)
+                            .background(Color(.systemGray5).opacity(0.8))
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 8)
                     
-                    HStack {
-                        Text(formatWorkspaceId(thread.workspaceId))
+                    // Agent name and thread info
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .center, spacing: 12) {
+                            Text(thread.agentName)
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        
+                        Text("Thread: \(thread.threadId.prefix(8))...")
                             .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(4)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Continue chat button
+                    Button(action: {
+                        presentContinueChat()
+                    }) {
+                        Label("Continue", systemImage: "arrow.right.circle")
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
                     }
                 }
-                
-                Spacer()
-                
-                // Continue chat button
-                Button(action: {
-                    presentContinueChat()
-                }) {
-                    Label("Continue Chat", systemImage: "arrow.right.circle")
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(20)
-                }
-
             }
             .padding()
             .background(Color(UIColor.systemBackground))
+            .overlay(
+                Divider(),
+                alignment: .bottom
+            )
             
-            Divider()
-            
+            // Content
             if isLoading {
                 Spacer()
                 ProgressView("Loading messages...")
+                    .padding(.top, 40)
                 Spacer()
             } else if let error = errorMessage {
                 Spacer()
                 VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.circle")
+                    Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 50))
-                        .foregroundColor(.red)
+                        .foregroundColor(.orange)
                     
                     Text("Error loading messages")
                         .font(.headline)
@@ -84,14 +93,16 @@ struct ChatThreadDetailView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
                     
-                    Button("Try Again") {
+                    Button(action: {
                         loadMessages()
+                    }) {
+                        Text("Try Again")
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -111,14 +122,16 @@ struct ChatThreadDetailView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 40)
                     
-                    Button("Continue Chat") {
+                    Button(action: {
                         presentContinueChat()
+                    }) {
+                        Text("Continue Chat")
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
                 }
                 .padding()
                 Spacer()
@@ -170,6 +183,7 @@ struct ChatThreadDetailView: View {
                 EmptyView()
             }
         }
+        .edgesIgnoringSafeArea(.bottom)
         .background(Color(UIColor.systemGray6))
         .onAppear {
             loadMessages()
@@ -248,13 +262,22 @@ struct ChatThreadDetailView: View {
             systemPrompt: ""
         )
         
-        // Set the agent and trigger navigation
-        self.agentForContinue = dummyAgent
+        // First dismiss this view
+        presentationMode.wrappedValue.dismiss()
         
-        // Use a short delay to ensure state is updated
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(thread.threadId)")
-            self.navigateToContinueChat = true
+        // Then post notification to show agent detail with thread
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            print("📱 THREAD-DETAIL - Posting notification to continue chat with thread: \(self.thread.threadId)")
+            
+            // Post notification for MainTabView to switch to the agent tab
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SwitchToAgentTab"),
+                object: nil,
+                userInfo: [
+                    "agent": dummyAgent,
+                    "threadId": self.thread.threadId
+                ]
+            )
         }
     }
 }

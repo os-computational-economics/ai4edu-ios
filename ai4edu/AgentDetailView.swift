@@ -13,6 +13,7 @@ struct AgentDetailView: View {
     let agent: Agent
     var initialThreadId: String? = nil
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var appState: AppState
     
     @State private var messages: [ChatMessage] = []
     @State private var messageText: String = ""
@@ -28,6 +29,10 @@ struct AgentDetailView: View {
         case chat
         case details
         case files
+    }
+    
+    var isStudent: Bool {
+        appState.currentWorkspace?.role.lowercased() == "student"
     }
     
     var body: some View {
@@ -101,15 +106,7 @@ struct AgentDetailView: View {
                     
                     Spacer()
                     
-                    // Dismiss button for sheet presentation
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.trailing, 8)
+                    // No close button - removed as requested
                 }
                 
                 // Tab selector
@@ -122,14 +119,18 @@ struct AgentDetailView: View {
                         action: { selectedTab = .chat }
                     )
                     
-                    TabButton(
-                        title: "Details",
-                        systemImage: "info.circle",
-                        isSelected: selectedTab == .details,
-                        action: { selectedTab = .details }
-                    )
+                    // Only show Details tab for non-students
+                    if !isStudent {
+                        TabButton(
+                            title: "Details",
+                            systemImage: "info.circle",
+                            isSelected: selectedTab == .details,
+                            action: { selectedTab = .details }
+                        )
+                    }
                     
-                    if !agent.agentFiles.isEmpty {
+                    // Only show Files tab for non-students and if files exist
+                    if !isStudent && !agent.agentFiles.isEmpty {
                         TabButton(
                             title: "Files",
                             systemImage: "doc.on.doc",
@@ -154,12 +155,14 @@ struct AgentDetailView: View {
                 chatView
                     .tag(DetailTab.chat)
                 
-                agentDetailsView
-                    .tag(DetailTab.details)
-                
-                if !agent.agentFiles.isEmpty {
-                    filesView
-                        .tag(DetailTab.files)
+                if !isStudent {
+                    agentDetailsView
+                        .tag(DetailTab.details)
+                    
+                    if !agent.agentFiles.isEmpty {
+                        filesView
+                            .tag(DetailTab.files)
+                    }
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))

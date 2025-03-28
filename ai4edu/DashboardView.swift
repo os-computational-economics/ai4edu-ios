@@ -548,7 +548,23 @@ struct AgentsView: View {
                 
                 switch result {
                 case .success(let response):
-                    self.agents.append(contentsOf: response.data.items)
+                    // Get the new agents
+                    let newAgents = response.data.items
+                    
+                    // Add new agents to existing list
+                    self.agents.append(contentsOf: newAgents)
+                    
+                    // Re-sort all agents to ensure correct ordering
+                    self.agents.sort { (agent1, agent2) -> Bool in
+                        if agent1.status != agent2.status {
+                            // Sort by status (active first)
+                            return agent1.status > agent2.status
+                        } else {
+                            // If status is the same, sort alphabetically by name
+                            return agent1.agentName.lowercased() < agent2.agentName.lowercased()
+                        }
+                    }
+                    
                     self.totalAgents = response.data.total
                     print("📱 Successfully loaded additional \(response.data.items.count) agents")
                     print("📱 Total agents now: \(self.agents.count) of \(self.totalAgents)")
@@ -609,7 +625,18 @@ struct AgentsView: View {
                         print("📱 AGENTS - First agent: \(response.data.items[0].agentName) (ID: \(response.data.items[0].agentId))")
                     }
                     
-                    self.agents = response.data.items
+                    // Sort agents - active agents first, then disabled agents
+                    let sortedAgents = response.data.items.sorted { (agent1, agent2) -> Bool in
+                        if agent1.status != agent2.status {
+                            // Sort by status (active first)
+                            return agent1.status > agent2.status
+                        } else {
+                            // If status is the same, sort alphabetically by name
+                            return agent1.agentName.lowercased() < agent2.agentName.lowercased()
+                        }
+                    }
+                    
+                    self.agents = sortedAgents
                     self.totalAgents = response.data.total
                     
                     if self.agents.isEmpty {
@@ -644,7 +671,7 @@ struct AgentsView: View {
 struct AgentCard: View {
     let agent: Agent
     let role: String
-    @State private var showAgentDetail: Bool = false
+    @State private var navigateToAgentDetail: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -671,7 +698,7 @@ struct AgentCard: View {
             HStack(spacing: 12) {
                 // Chat button - always show with a filled style
                 Button(action: {
-                    showAgentDetail = true
+                    navigateToAgentDetail = true
                 }) {
                     HStack {
                         Image(systemName: "message.fill")
@@ -735,11 +762,15 @@ struct AgentCard: View {
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .sheet(isPresented: $showAgentDetail) {
-            NavigationView {
-                AgentDetailView(agent: agent)
+        .background(
+            NavigationLink(
+                destination: AgentDetailView(agent: agent)
+                    .navigationBarHidden(true),
+                isActive: $navigateToAgentDetail
+            ) {
+                EmptyView()
             }
-        }
+        )
     }
 }
 
