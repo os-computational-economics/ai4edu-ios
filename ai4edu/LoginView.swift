@@ -167,6 +167,9 @@ struct LoginView: View {
                     // Trigger login with animation via AppState
                     isLoggingIn = false
                     appState.login()
+                }, onCancel: {
+                    // Reset loading state when login is canceled
+                    isLoggingIn = false
                 })
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut(duration: 0.3), value: showWebView)

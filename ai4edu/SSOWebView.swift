@@ -13,6 +13,7 @@ struct SSOWebView: View {
     let url: URL
     @Binding var isPresented: Bool
     var onSuccessfulLogin: () -> Void
+    var onCancel: (() -> Void)? = nil
     @State private var isLoading = true
     @State private var showLoadingIndicator = true
     @State private var opacity = 0.0
@@ -107,6 +108,8 @@ struct SSOWebView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             isPresented = false
+            // Call onCancel callback when user dismisses the login window
+            onCancel?()
         }
     }
 }
