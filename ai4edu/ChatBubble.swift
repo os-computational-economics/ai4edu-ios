@@ -11,7 +11,6 @@ import Foundation
 // MARK: - Formatting Extensions
 
 extension Message {
-    /// Create a placeholder loading message
     static func loadingMessage() -> Message {
         return Message(
             id: UUID().uuidString,
@@ -20,7 +19,6 @@ extension Message {
         )
     }
     
-    /// Create a user message
     static func userMessage(_ text: String) -> Message {
         return Message(
             id: UUID().uuidString,
@@ -30,7 +28,6 @@ extension Message {
         )
     }
     
-    // Computed property for identification
     var isFromUser: Bool {
         return align == "end"
     }
@@ -38,7 +35,6 @@ extension Message {
 
 // MARK: - UI Components
 
-/// Simple chat bubble for preview purposes
 struct SimpleChatBubble: View {
     let message: String
     let isFromUser: Bool
@@ -96,17 +92,14 @@ struct ChatBubble: View {
     let message: ChatMessage
     let agentName: String
     
-    // Add state wrapper to force refresh when message text changes
     @State private var currentText: String
     
-    // Initialize with current message text
     init(message: ChatMessage, agentName: String) {
         self.message = message
         self.agentName = agentName
         self._currentText = State(initialValue: message.text)
     }
     
-    // Add id explicitly for equatable comparison
     var id: String {
         message.id
     }
@@ -121,7 +114,6 @@ struct ChatBubble: View {
                     .padding(.bottom, 2)
             }
             
-            // Use our custom MarkdownText renderer instead of Text
             MarkdownText(text: message.text, isFromUser: message.isFromUser)
                 .id("text-\(message.id)-\(message.text.hashValue)")
                 .padding(.horizontal, 16)
@@ -132,7 +124,6 @@ struct ChatBubble: View {
                 .cornerRadius(20)
                 .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: message.isFromUser ? .trailing : .leading)
                 .onChange(of: message.text) { newText in
-                    // Force state update when message text changes
                     currentText = newText
                 }
             
@@ -168,7 +159,6 @@ struct ChatBubble: View {
     }
 }
 
-// Make the view update when message content changes
 extension ChatBubble: Equatable {
     static func == (lhs: ChatBubble, rhs: ChatBubble) -> Bool {
         return lhs.message.id == rhs.message.id && 

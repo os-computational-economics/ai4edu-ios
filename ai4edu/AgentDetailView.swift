@@ -10,7 +10,6 @@ import Combine
 import Foundation
 import UIKit
 
-// UIKit representable to add keyboard toolbar for TextEditor
 struct KeyboardToolbar: UIViewRepresentable {
     let doneAction: () -> Void
     
@@ -91,10 +90,10 @@ struct AgentDetailView: View {
     @State private var isLoading: Bool = false
     @State private var showAgentInfo: Bool = true
     @State private var selectedTab: DetailTab = .chat
-    @State private var currentThreadId: String? = nil  // Store the thread ID
-    @State private var messageUpdateCounter: Int = 0   // Track message content updates
-    @StateObject private var streamObserver = StreamingObserver()  // Add streaming observer
-    @State private var hasInitialized: Bool = false    // Track if view has been initialized
+    @State private var currentThreadId: String? = nil
+    @State private var messageUpdateCounter: Int = 0
+    @StateObject private var streamObserver = StreamingObserver()
+    @State private var hasInitialized: Bool = false
     
     enum DetailTab {
         case chat
@@ -108,10 +107,8 @@ struct AgentDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with more detailed information
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center) {
-                    // Back button
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
@@ -121,7 +118,6 @@ struct AgentDetailView: View {
                     }
                     .padding(.trailing, 8)
                     
-                    // Agent name and status
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .center, spacing: 12) {
                             Text(agent.agentName)
@@ -130,7 +126,6 @@ struct AgentDetailView: View {
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                             
-                            // Status indicator
                             HStack(spacing: 6) {
                                 Circle()
                                     .fill(agent.status == 1 ? Color.green : Color.red)
@@ -167,7 +162,6 @@ struct AgentDetailView: View {
                     
                     Spacer()
                     
-                    // Full screen close button
                     if fullScreenMode {
                         Button(action: {
                             presentationMode.wrappedValue.dismiss()
@@ -179,7 +173,6 @@ struct AgentDetailView: View {
                     }
                 }
                 
-                // Tab selector - only show if not in full screen mode
                 if !fullScreenMode {
                     HStack(spacing: 0) {
                         TabButton(
@@ -190,7 +183,6 @@ struct AgentDetailView: View {
                             action: { selectedTab = .chat }
                         )
                         
-                        // Only show Details tab for non-students
                         if !isStudent {
                             TabButton(
                                 title: "Details",
@@ -225,7 +217,6 @@ struct AgentDetailView: View {
             if fullScreenMode {
                 chatView
             } else {
-                // Only use TabView if not in full screen mode
                 TabView(selection: $selectedTab) {
                     chatView
                         .tag(DetailTab.chat)
@@ -249,17 +240,14 @@ struct AgentDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 if fullScreenMode {
-                    // Empty view to keep swipe gesture area but hide default back button
                     Color.clear.frame(width: 0, height: 0)
                 }
             }
         }
         .onAppear {
             if fullScreenMode {
-                // Hide tab bar notification
                 NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
                 
-                // Make navigation bar transparent in full screen mode
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithTransparentBackground()
                 appearance.backgroundColor = .clear
@@ -268,21 +256,13 @@ struct AgentDetailView: View {
                 UINavigationBar.appearance().compactAppearance = appearance
                 UINavigationBar.appearance().scrollEdgeAppearance = appearance
             }
-            
-            print("📱 AGENT-DETAIL - View appeared for agent: \(agent.agentName), initialThreadId: \(String(describing: initialThreadId)), hasInitialized: \(hasInitialized)")
-            
-            // Only initialize once to prevent duplicate loading
             if !hasInitialized {
                 hasInitialized = true
                 
-                // Check if we have an initial thread ID to continue conversation
                 if let threadId = initialThreadId {
-                    print("📱 AGENT-DETAIL - Initializing with thread ID: \(threadId)")
                     currentThreadId = threadId
                     
-                    // Load the messages after a very short delay to ensure view is fully mounted
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId)")
                         loadThreadMessages(threadId: threadId)
                     }
                 } else {
@@ -291,7 +271,6 @@ struct AgentDetailView: View {
             }
         }
         .onDisappear {
-            // Reset navigation bar appearance when view disappears
             if fullScreenMode {
                 NotificationCenter.default.post(name: NSNotification.Name("ShowTabBar"), object: nil)
                 
@@ -313,7 +292,6 @@ struct AgentDetailView: View {
         Group {
             if agent.status == 1 {
                 VStack(spacing: 0) {
-                    // Messages
                     ScrollViewReader { scrollProxy in
                         ScrollView {
                             LazyVStack(spacing: 16) {
@@ -350,7 +328,7 @@ struct AgentDetailView: View {
                                     ForEach(messages) { message in
                                         ChatBubble(message: message, agentName: agent.agentName)
                                             .padding(.horizontal)
-                                            .id("\(message.id)-\(message.text.hashValue)") // Add hash to ID for refreshing
+                                            .id("\(message.id)-\(message.text.hashValue)")
                                     }
                                     
                                     if isLoading {
@@ -362,7 +340,6 @@ struct AgentDetailView: View {
                                         }
                                     }
                                     
-                                    // Invisible element at the bottom for scrolling
                                     Rectangle()
                                         .fill(Color.clear)
                                         .frame(height: 1)
@@ -373,8 +350,7 @@ struct AgentDetailView: View {
                         }
                         .simultaneousGesture(
                             DragGesture().onChanged { _ in
-                                // Dismiss keyboard when scrolling
-                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                                               to: nil, 
                                                               from: nil, 
                                                               for: nil)
@@ -383,8 +359,7 @@ struct AgentDetailView: View {
                         .gesture(
                             TapGesture()
                                 .onEnded { _ in
-                                    // Dismiss keyboard when tapping on messages
-                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                                                  to: nil, 
                                                                  from: nil, 
                                                                  for: nil)
@@ -406,15 +381,12 @@ struct AgentDetailView: View {
                             }
                         }
                         .onChange(of: streamObserver.lastUpdatedId) { _ in
-                            // Scroll when streaming updates occur
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
-                        // Add an onChange handler for the keyboard
                         .onChange(of: messageText) { _ in
                             if !messages.isEmpty {
-                                // Small delay to ensure keyboard is fully shown
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     withAnimation {
                                         scrollProxy.scrollTo("bottom", anchor: .bottom)
@@ -435,17 +407,15 @@ struct AgentDetailView: View {
                                     .padding(.vertical, 8)
                             }
                             
-                            // Text editor with fixed height
                             TextEditor(text: $messageText)
                                 .padding(.horizontal, 1)
-                                .frame(minHeight: 20, maxHeight: 120) // Limit height
+                                .frame(minHeight: 20, maxHeight: 120)
                                 .cornerRadius(20)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .opacity(messageText.isEmpty ? 0.7 : 1)
                                 .background(
                                     KeyboardToolbar {
-                                        // Dismiss keyboard action
-                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
+                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                                                       to: nil, 
                                                                       from: nil, 
                                                                       for: nil)
@@ -483,7 +453,7 @@ struct AgentDetailView: View {
                         alignment: .top
                     )
                 }
-                .avoidKeyboard() // Apply keyboard avoidance
+                .avoidKeyboard()
             } else {
                 // Agent is disabled
                 VStack(spacing: 20) {
@@ -510,7 +480,6 @@ struct AgentDetailView: View {
     private var agentDetailsView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Basic details card
                 detailCard(title: "Basic Information") {
                     VStack(alignment: .leading, spacing: 12) {
                         detailRow(title: "Agent ID", value: agent.agentId)
@@ -525,7 +494,6 @@ struct AgentDetailView: View {
                     }
                 }
                 
-                // Additional features card
                 detailCard(title: "Features") {
                     VStack(alignment: .leading, spacing: 12) {
                         detailRow(title: "Voice Enabled", value: agent.voice ? "Yes" : "No")
@@ -533,7 +501,6 @@ struct AgentDetailView: View {
                     }
                 }
                 
-                // Timestamps card
                 detailCard(title: "Timestamps") {
                     VStack(alignment: .leading, spacing: 12) {
                         detailRow(title: "Created", value: formatDate(agent.createdAt, includeTime: true))
@@ -541,7 +508,6 @@ struct AgentDetailView: View {
                     }
                 }
                 
-                // Files card (if any)
                 if !agent.agentFiles.isEmpty {
                     detailCard(title: "Attached Files (\(agent.agentFiles.count))") {
                         VStack(alignment: .leading, spacing: 8) {
@@ -692,7 +658,6 @@ struct AgentDetailView: View {
         print("messageTExt: \(messageText)")
         guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
-        // Add user message
         let userMessage = ChatMessage(
             id: UUID().uuidString,
             text: messageText,
@@ -701,11 +666,9 @@ struct AgentDetailView: View {
         )
         messages.append(userMessage)
         
-        // Clear input field
         let userMessageText = messageText
         messageText = ""
         
-        // Show loading indicator
         isLoading = true
         
         // If we already have a thread ID, use it, otherwise create a new thread
@@ -713,7 +676,6 @@ struct AgentDetailView: View {
             print("Reusing existing thread: \(threadId)")
             sendMessageToThread(userMessageText, threadId: threadId)
         } else {
-            // Create a new thread
             ChatService.shared.createNewThread(
                 agentId: agent.agentId,
                 workspaceId: agent.workspaceId
@@ -721,7 +683,6 @@ struct AgentDetailView: View {
                 switch result {
                 case .success(let threadId):
                     print("successfully created new thread with id: \(threadId)")
-                    // Store the thread ID for future use
                     self.currentThreadId = threadId
                     self.sendMessageToThread(userMessageText, threadId: threadId)
                     
@@ -745,18 +706,13 @@ struct AgentDetailView: View {
     }
     
     private func sendMessageToThread(_ messageText: String, threadId: String) {
-        print("📱 AGENT-DETAIL - Sending message to thread: \(threadId)")
         
-        // Convert existing messages to the format required by the API
         var previousMessages: [[String: Any]] = []
         
-        // If we need to fetch thread messages from API first, use this endpoint
         if messages.isEmpty {
             let apiUrl = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
-            print("📱 AGENT-DETAIL - Thread history available at: \(apiUrl)")
         }
         
-        // Add all previous messages from the conversation
         for (index, message) in messages.enumerated() {
             let role = message.isFromUser ? "user" : "assistant"
             previousMessages.append([
@@ -765,15 +721,11 @@ struct AgentDetailView: View {
             ])
         }
         
-        // Add the new user message at the end
         previousMessages.append([
             "role": "user",
             "content": messageText
         ])
         
-        print("Sending \(previousMessages.count) messages in conversation history")
-        
-        // Create a placeholder message for streaming updates
         let placeholderId = "placeholder-\(UUID().uuidString)"
         let placeholderMessage = ChatMessage(
             id: placeholderId,
@@ -782,29 +734,21 @@ struct AgentDetailView: View {
             timestamp: Date()
         )
         
-        // Reset streaming observer and add placeholder
         streamObserver.reset(placeholderId: placeholderId)
         
-        // Add placeholder to UI
         messages.append(placeholderMessage)
         
-        // Force UI update
         messageUpdateCounter += 1
         
-        // Setup observer for streaming updates
         streamObserver.onUpdate = { [self] newContent in
             if let index = self.messages.firstIndex(where: { $0.id == placeholderId }) {
-                // Update directly on main thread
                 DispatchQueue.main.async {
                     self.messages[index].text = newContent
                     self.messageUpdateCounter += 1
-                    // Print for debugging
-                    print("UI UPDATED with: \(newContent.prefix(10))...")
                 }
             }
         }
         
-        // Use the callback-based streaming method
         ChatService.shared.streamMessageWithCallback(
             message: messageText,
             threadId: threadId,
@@ -812,7 +756,6 @@ struct AgentDetailView: View {
             workspaceId: agent.workspaceId,
             previousMessages: previousMessages,
             onChunk: { [self] chunkText in
-                // Update via the observer
                 self.streamObserver.updateContent(chunkText)
             },
             onCompletion: { [self] result in
@@ -820,16 +763,11 @@ struct AgentDetailView: View {
                 DispatchQueue.main.async {
                     self.isLoading = false
                     
-                    // Process the final result
                     switch result {
                     case .success(let response):
-                        print("Streaming completed with message: \(response.messageId)")
-                        
-                        // Replace the placeholder with final message
                         if let index = self.messages.firstIndex(where: { $0.id == placeholderId }) {
                             self.messages.remove(at: index)
                             
-                            // Add final agent response
                             let agentMessage = ChatMessage(
                                 id: UUID().uuidString,
                                 text: response.content, 
@@ -841,13 +779,10 @@ struct AgentDetailView: View {
                         }
                         
                     case .failure(let error):
-                        print("Error in streaming: \(error)")
                         
-                        // Remove placeholder
                         if let index = self.messages.firstIndex(where: { $0.id == placeholderId }) {
                             self.messages.remove(at: index)
                             
-                            // Show error message
                             let errorMessage = ChatMessage(
                                 id: UUID().uuidString,
                                 text: "Sorry, there was an error processing your request. Please try again later.",
@@ -910,37 +845,22 @@ struct AgentDetailView: View {
         }
     }
     
-    // Add new function to load messages for an existing thread
     private func loadThreadMessages(threadId: String) {
-        // Set loading state
         isLoading = true
-        print("📱 AGENT-DETAIL - Loading messages for thread: \(threadId) (loading state: \(isLoading))")
         
-        // Clear any existing messages
         messages = []
         
-        // Ensure we have valid thread ID saved
         currentThreadId = threadId
         
-        // API endpoint from requirements
         let apiEndpoint = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
-        print("📱 AGENT-DETAIL - Using API endpoint: \(apiEndpoint)")
         
-        // Use the existing ChatService to load messages
         ChatService.shared.getThreadMessages(threadId: threadId) { result in
-            // Make sure we're on the main thread
             DispatchQueue.main.async {
-                // Update loading state
                 self.isLoading = false
-                print("📱 AGENT-DETAIL - Thread messages loading complete, setting isLoading = false")
                 
                 switch result {
                 case .success(let apiMessages):
-                    print("📱 AGENT-DETAIL - Successfully loaded \(apiMessages.count) messages from thread")
-                    
-                    // Only proceed if we have messages
                     if apiMessages.isEmpty {
-                        print("📱 AGENT-DETAIL - Thread exists but contains no messages")
                         let infoMessage = ChatMessage(
                             id: UUID().uuidString,
                             text: "This conversation has been started but doesn't have any messages yet. You can start typing below.",
@@ -952,9 +872,7 @@ struct AgentDetailView: View {
                         return
                     }
                     
-                    // Convert API messages to ChatMessage format
                     let chatMessages = apiMessages.map { message -> ChatMessage in
-                        // Use the role directly, or fall back to the align property
                         let isFromUser = message.role == "human" || (message.role == nil && message.align == "end")
                         let timestamp = self.parseTimestamp(from: message.id)
                         
@@ -966,15 +884,11 @@ struct AgentDetailView: View {
                         )
                     }
                     
-                    // Add messages to the chat
-                    print("📱 AGENT-DETAIL - Adding \(chatMessages.count) messages to the chat")
                     self.messages = chatMessages
                     self.messageUpdateCounter += 1
                     
                 case .failure(let error):
-                    print("📱 AGENT-DETAIL - Error loading thread messages: \(error)")
                     
-                    // Show error as a message in the chat
                     let errorMessage = ChatMessage(
                         id: UUID().uuidString,
                         text: "Failed to load previous messages: \(error.localizedDescription). You can still continue the conversation.",
@@ -988,7 +902,6 @@ struct AgentDetailView: View {
         }
     }
     
-    // Helper to parse timestamp from message ID
     private func parseTimestamp(from messageId: String) -> Date {
         if messageId.contains("#"), 
            let timestampString = messageId.components(separatedBy: "#").last,
@@ -1023,7 +936,6 @@ class StreamingObserver: ObservableObject {
     }
     
     func updateContent(_ newContent: String) {
-        // Update on the main thread
         DispatchQueue.main.async { [self] in
             self.content = newContent
             self.lastUpdatedId = UUID().uuidString

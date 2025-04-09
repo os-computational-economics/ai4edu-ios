@@ -17,7 +17,6 @@ struct AI4EDUApp: App {
             ContentView()
                 .environmentObject(appState)
                 .onOpenURL { url in
-                    // Handle deep links
                     if url.absoluteString.starts(with: "ai4edu://callback") {
                         if APIService.shared.handleSSOCallback(url: url) {
                             appState.isLoggedIn = true

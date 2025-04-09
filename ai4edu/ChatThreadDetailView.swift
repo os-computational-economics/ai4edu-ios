@@ -20,9 +20,7 @@ struct ChatThreadDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with thread info and continue chat button
             HStack {
-                // Back button
                 Button(action: {
                     presentationMode.wrappedValue.dismiss()
                 }) {
@@ -48,7 +46,6 @@ struct ChatThreadDetailView: View {
                 
                 Spacer()
                 
-                // Continue chat button - only show if created by current user
                 if isCurrentUserThread {
                     Button(action: {
                         presentContinueChat()
@@ -152,12 +149,10 @@ struct ChatThreadDetailView: View {
                 .padding()
                 Spacer()
             } else {
-                // Message list
                 ScrollViewReader { scrollProxy in
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(messages) { message in
-                                // Convert Message to ChatMessage format for ChatBubble
                                 let chatMessage = ChatMessage(
                                     id: message.id,
                                     text: message.content,
@@ -170,12 +165,10 @@ struct ChatThreadDetailView: View {
                                     .id(message.id)
                             }
                             
-                            // Invisible element at the bottom for scrolling
                             Color.clear.frame(height: 1).id("bottom")
                         }
                         .padding(.vertical)
                         .onAppear {
-                            // Scroll to bottom when messages load
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 withAnimation {
                                     scrollProxy.scrollTo("bottom", anchor: .bottom)
@@ -186,13 +179,10 @@ struct ChatThreadDetailView: View {
                 }
             }
             
-            // Navigation link for continue chat (hidden)
             NavigationLink(
                 destination: Group {
                     if let agent = agentForContinue {
                         AgentDetailView(agent: agent, initialThreadId: thread.threadId, fullScreenMode: true)
-                            // Remove direct hiding to maintain swipe gestures
-                            // Let AgentDetailView handle its own toolbar customization
                     }
                 },
                 isActive: $navigateToContinueChat
@@ -205,12 +195,9 @@ struct ChatThreadDetailView: View {
             loadMessages()
             checkIfCurrentUserThread()
         }
-        // Replace direct hiding with toolbar approach to maintain swipe gestures
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // Hide default navigation items but maintain swipe area
             ToolbarItem(placement: .navigationBarLeading) {
-                // Empty view to keep swipe area but hide default back button
                 Color.clear.frame(width: 0, height: 0)
             }
         }
@@ -220,7 +207,6 @@ struct ChatThreadDetailView: View {
         isLoading = true
         errorMessage = nil
         
-        // Use the get_thread endpoint with thread ID as shown in the example
         ChatService.shared.getThreadMessages(threadId: thread.threadId) { result in
             self.isLoading = false
             
@@ -230,26 +216,18 @@ struct ChatThreadDetailView: View {
                 
             case .failure(let error):
                 self.errorMessage = error.localizedDescription
-                print("Error loading thread messages: \(error)")
             }
         }
     }
     
     private func checkIfCurrentUserThread() {
-        // Get the current user ID
         let currentUserId = ChatService.shared.getCurrentUserID()
         
-        // Convert thread.userId to String for comparison
         let threadUserId = String(thread.userId)
         
-        // Check if this thread was created by the current user
         isCurrentUserThread = (threadUserId == currentUserId)
-        
-        print("📱 THREAD-DETAIL - Thread user ID: \(threadUserId), Current user ID: \(currentUserId)")
-        print("📱 THREAD-DETAIL - Is current user's thread: \(isCurrentUserThread)")
     }
     
-    // Helper functions for formatting
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
@@ -269,45 +247,32 @@ struct ChatThreadDetailView: View {
         return id.replacingOccurrences(of: "_", with: ".")
     }
     
-    // Generate a timestamp from message ID (fallback method)
     private func parseDate(_ id: String) -> Date {
-        // Extract timestamp if in format like "4963b0c8#1742878487244"
         if id.contains("#"), let timeString = id.components(separatedBy: "#").last, 
            let timeInterval = Double(timeString) {
             return Date(timeIntervalSince1970: timeInterval / 1000.0)
         }
         
-        // Fallback to current time if date parsing fails
         return Date()
     }
     
-    // Create a separate method to present the ContinueChatView
     private func presentContinueChat() {
-        print("📱 THREAD-DETAIL - Continue chat button pressed for thread: \(thread.threadId)")
         
-        // Show loading state if needed
         isLoading = true
         
-        // Fetch the full agent details from the API
         ChatService.shared.getAgentDetails(agentId: thread.agentId) { result in
             DispatchQueue.main.async {
                 self.isLoading = false
                 
                 switch result {
                 case .success(let agent):
-                    print("📱 THREAD-DETAIL - Successfully loaded agent: \(agent.agentName) for thread: \(self.thread.threadId)")
-                    // Set the agent and trigger navigation
                     self.agentForContinue = agent
                     
-                    // Use a short delay to ensure state is updated
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(self.thread.threadId)")
                         self.navigateToContinueChat = true
                     }
                     
                 case .failure(let error):
-                    print("📱 THREAD-DETAIL - Error loading agent details: \(error)")
-                    // Handle error - fallback to using limited information we have
                     let fallbackAgent = Agent(
                         agentId: self.thread.agentId,
                         agentName: self.thread.agentName,
@@ -325,9 +290,7 @@ struct ChatThreadDetailView: View {
                     
                     self.agentForContinue = fallbackAgent
                     
-                    // Still proceed with navigation
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        print("📱 THREAD-DETAIL - Navigating to continue chat with thread: \(self.thread.threadId) using fallback agent")
                         self.navigateToContinueChat = true
                     }
                 }

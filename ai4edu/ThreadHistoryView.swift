@@ -28,14 +28,11 @@ struct ThreadHistoryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Thread list content
                 if isLoading && threads.isEmpty {
-                    // Loading state
                     Spacer()
                     ProgressView("Loading chat history...")
                     Spacer()
                 } else if let error = errorMessage, threads.isEmpty {
-                    // Error state
                     Spacer()
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
@@ -65,7 +62,6 @@ struct ThreadHistoryView: View {
                     .padding()
                     Spacer()
                 } else if threads.isEmpty {
-                    // Empty state
                     Spacer()
                     VStack(spacing: 16) {
                         Image(systemName: "bubble.left.and.bubble.right")
@@ -84,7 +80,6 @@ struct ThreadHistoryView: View {
                     .padding()
                     Spacer()
                 } else {
-                    // Thread list
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(threads) { thread in
@@ -100,7 +95,6 @@ struct ThreadHistoryView: View {
                                     .padding(.leading)
                             }
                             
-                            // Load more trigger
                             loadMoreTrigger
                         }
                     }
@@ -109,7 +103,6 @@ struct ThreadHistoryView: View {
                     }
                 }
                 
-                // Navigate to thread detail
                 NavigationLink(
                     destination: Group {
                         if let thread = selectedThread {
@@ -130,7 +123,6 @@ struct ThreadHistoryView: View {
             loadThreadsIfNeeded()
         }
         .onChange(of: appState.currentWorkspace?.id) { newId in
-            // Reload threads when workspace changes
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 refreshThreads()
@@ -145,14 +137,12 @@ struct ThreadHistoryView: View {
         }
     }
     
-    // Load more trigger view
     private var loadMoreTrigger: some View {
         Group {
             if isLoadingMore {
                 ProgressView()
                     .padding()
             } else if hasMorePages {
-                // Invisible rectangle that triggers loading more when it appears
                 Rectangle()
                     .foregroundColor(.clear)
                     .frame(height: 50)
@@ -160,7 +150,6 @@ struct ThreadHistoryView: View {
                         loadMoreThreads()
                     }
             } else {
-                // End of history message
                 Text("End of chat history")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -169,10 +158,7 @@ struct ThreadHistoryView: View {
         }
     }
     
-    // Helper functions
-    
     private func loadThreadsIfNeeded() {
-        // If we don't have threads yet, or workspace has changed, load them
         if threads.isEmpty || 
            (appState.currentWorkspace != nil && currentWorkspaceId != appState.currentWorkspace!.id) {
             if let workspaceId = appState.currentWorkspace?.id {
@@ -183,8 +169,6 @@ struct ThreadHistoryView: View {
     }
     
     private func refreshThreads() {
-        print("📱 THREAD-HISTORY - Refreshing threads")
-        // Reset pagination
         currentPage = 1
         isLoading = true
         errorMessage = nil
@@ -199,7 +183,6 @@ struct ThreadHistoryView: View {
     }
     
     private func loadMoreThreads() {
-        // Only load more if we have more pages and aren't already loading
         if hasMorePages && !isLoading && !isLoadingMore {
             currentPage += 1
             loadThreads()
@@ -218,9 +201,6 @@ struct ThreadHistoryView: View {
             hasMorePages = true
         }
         
-        print("📱 THREAD-HISTORY - Loading threads for page \(currentPage) in workspace \(workspace.id)")
-        
-        // Ensure we're not already loading
         if isLoadingMore { return }
         
         isLoading = true
@@ -237,32 +217,24 @@ struct ThreadHistoryView: View {
                 
                 switch result {
                 case .success(let response):
-                    // Handle success
                     if isRefresh {
-                        // Replace all threads on refresh
                         self.threads = response.threads
                     } else {
-                        // Append new threads
                         self.threads.append(contentsOf: response.threads)
                     }
                     
                     self.totalThreads = response.total
                     
-                    // Check if we have more pages
                     self.hasMorePages = self.threads.count < response.total
                     
-                    print("📱 THREAD-HISTORY - Loaded \(response.threads.count) threads. Total: \(response.total)")
                     
                 case .failure(let error):
-                    // Handle error
                     self.errorMessage = error.localizedDescription
-                    print("📱 THREAD-HISTORY - Error loading threads: \(error)")
                 }
             }
         }
     }
     
-    // Asynchronous refresh for SwiftUI's refreshable modifier
     private func refreshThreadsAsync() async {
         await withCheckedContinuation { continuation in
             refreshThreads()
@@ -345,19 +317,16 @@ struct ThreadListItem: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            // Thread information
             VStack(alignment: .leading, spacing: 4) {
                 Text(thread.agentName)
                     .font(.headline)
                     .lineLimit(1)
                 
                 HStack(spacing: 6) {
-                    // Thread creation date
                     Text(formatDate(thread.createdAt))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    // Workspace indicator
                     Text(formatWorkspaceId(thread.workspaceId))
                         .font(.caption)
                         .padding(.horizontal, 4)
@@ -370,7 +339,6 @@ struct ThreadListItem: View {
             
             Spacer()
             
-            // Chevron indicating it's tappable
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -379,13 +347,11 @@ struct ThreadListItem: View {
         .contentShape(Rectangle())
     }
     
-    // Helper functions for formatting
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
         
         if let date = dateFormatter.date(from: dateString) {
-            // Always show the full date and time in a consistent format
             let displayFormatter = DateFormatter()
             displayFormatter.dateFormat = "M/d/yyyy, h:mm:ss a"
             return displayFormatter.string(from: date)
@@ -395,7 +361,6 @@ struct ThreadListItem: View {
     }
     
     private func formatWorkspaceId(_ id: String) -> String {
-        // Format the ID in a user-friendly way
         let parts = id.replacingOccurrences(of: "_", with: ".").components(separatedBy: ".")
         if parts.count >= 2 {
             return parts[0]

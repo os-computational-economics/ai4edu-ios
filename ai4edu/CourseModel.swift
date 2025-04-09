@@ -32,11 +32,9 @@ class CourseManager {
         if let data = UserDefaults.standard.data(forKey: coursesKey),
            let courses = try? JSONDecoder().decode([Course].self, from: data) {
             
-            // Check if we have token roles to update
             let workspaceRoles = TokenManager.shared.getWorkspaceRoles()
             
             if !workspaceRoles.isEmpty {
-                // Update course roles from token if available
                 var updatedCourses = courses
                 
                 for (index, course) in courses.enumerated() {
@@ -45,7 +43,6 @@ class CourseManager {
                     }
                 }
                 
-                // Save the updated courses
                 saveCourses(updatedCourses)
                 return updatedCourses
             }
@@ -53,7 +50,6 @@ class CourseManager {
             return courses
         }
         
-        // Return mock data if no saved courses
         return getMockCoursesWithRoles()
     }
     
@@ -71,7 +67,6 @@ class CourseManager {
         return nil
     }
     
-    // Mock data for initial development
     private func getMockCourses() -> [Course] {
         return [
             Course(id: "ECON235.F24", role: "student", name: "The Future Me"),
@@ -81,7 +76,6 @@ class CourseManager {
         ]
     }
     
-    // Get mock courses but check for roles in the token
     private func getMockCoursesWithRoles() -> [Course] {
         let mockCourses = getMockCourses()
         let workspaceRoles = TokenManager.shared.getWorkspaceRoles()
@@ -90,7 +84,6 @@ class CourseManager {
             return mockCourses
         }
         
-        // Update mock courses with roles from token
         return mockCourses.map { course in
             if let roleFromToken = workspaceRoles[course.id] {
                 return Course(id: course.id, role: roleFromToken, name: course.name)

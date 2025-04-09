@@ -15,18 +15,15 @@ struct DashboardView: View {
     @State private var hideTabBar: Bool = false
     
     var body: some View {
-        // Display the appropriate content based on the currently selected tab
         Group {
             switch appState.currentTab {
             case .agents:
                 AgentsView()
             case .roster:
-                // Only show roster if the user has teacher or admin role
                 if let role = appState.currentWorkspace?.role,
                    role.lowercased() == "teacher" || role.lowercased() == "admin" {
                     RosterView()
                 } else {
-                    // Show access restricted view for students
                     restrictedAccessView()
                 }
             case .chatHistory:
@@ -46,12 +43,9 @@ struct DashboardView: View {
         }
     }
     
-    // Helper function to setup notification observers
     private func setupTabBarNotifications() {
-        // Remove any existing observers first
         NotificationCenter.default.removeObserver(self)
         
-        // Add observers for tab bar visibility
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("HideTabBar"),
             object: nil,
@@ -71,7 +65,6 @@ struct DashboardView: View {
             }
     }
     
-    // View to show when access is restricted
     private func restrictedAccessView() -> some View {
         VStack(spacing: 20) {
             Image(systemName: "lock.shield")
@@ -94,26 +87,20 @@ struct DashboardView: View {
     }
     
     private func loadData() {
-        // Get workspace roles from token
         workspaceRoles = TokenManager.shared.getWorkspaceRoles()
         
-        // Load courses, which will be updated with roles from the token
         courses = CourseManager.shared.getCourses()
         
         printWorkspaceRoles()
     }
     
     private func printWorkspaceRoles() {
-        // Use the new improved debug print function that shows everything
         TokenManager.shared.debugPrintToken()
         
-        // Also print workspace roles (which are accessed directly by the app)
         if !workspaceRoles.isEmpty {
-            print("\n=== AVAILABLE WORKSPACE ROLES ===")
             for (workspaceId, role) in workspaceRoles.sorted(by: { $0.key < $1.key }) {
                 print("  Workspace: \(workspaceId), Role: \(role.capitalized)")
             }
-            print("================================\n")
         }
     }
 }
@@ -130,7 +117,6 @@ struct SidebarView: View {
     var body: some View {
         List {
             
-            // Display all workspaces from JWT directly in sidebar
             if !workspaceRoles.isEmpty {
                 Section(header: Text("YOUR WORKSPACES")) {
                     ForEach(workspaceRoles.keys.sorted(), id: \.self) { workspaceId in
@@ -163,7 +149,6 @@ struct SidebarView: View {
                 }
             }
             
-            // Show current workspace features if one is selected
             if let workspace = appState.currentWorkspace, !workspace.id.isEmpty {
                 Section(header: Text("CURRENT: \(workspace.name)")) {
                     NavigationLink(
@@ -174,7 +159,6 @@ struct SidebarView: View {
                         Label("Agents", systemImage: "person.text.rectangle")
                     }
                     
-                    // Only show Roster for teachers and admins
                     if workspace.role == "teacher" || workspace.role == "admin" {
                         NavigationLink(
                             destination: RosterView(),
@@ -216,7 +200,6 @@ struct SidebarView: View {
                 
                 if showTokens {
                     VStack(alignment: .leading, spacing: 10) {
-                        // Decoded Token Information
                         Text("Token Information:")
                             .font(.headline)
                             .fontWeight(.bold)
@@ -271,7 +254,6 @@ struct SidebarView: View {
                         Divider()
                             .padding(.vertical, 5)
                         
-                        // Raw Token Display
                         Text("Access Token (Raw):")
                             .font(.caption)
                             .fontWeight(.bold)
@@ -320,7 +302,6 @@ struct SidebarView: View {
         .listStyle(SidebarListStyle())
         .frame(minWidth: 200)
         .onAppear {
-            // Load workspace roles from token
             workspaceRoles = TokenManager.shared.getWorkspaceRoles()
         }
     }
@@ -329,20 +310,17 @@ struct SidebarView: View {
         let courseName = formatWorkspaceName(id)
         let course = Course(id: id, role: role, name: courseName)
         
-        // Save selected course and update app state
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
 
     }
     
     private func formatWorkspaceName(_ id: String) -> String {
-        // Try to find the existing course by ID to get its name
         let courses = CourseManager.shared.getCourses()
         if let existingCourse = courses.first(where: { $0.id == id }) {
             return existingCourse.name
         }
         
-        // Format the ID in a user-friendly way if no name is available
         let parts = id.components(separatedBy: ".")
         if parts.count >= 2 {
             let courseCode = parts[0]
@@ -396,7 +374,6 @@ struct AgentsView: View {
             }
         }
         .overlay(
-            // Only show the add button for non-students and when tab bar is visible
             VStack {
                 Spacer()
                 if let role = appState.currentWorkspace?.role, 
@@ -424,7 +401,6 @@ struct AgentsView: View {
             setupTabBarNotifications()
         }
         .onChange(of: appState.currentWorkspace?.id) { newId in
-            // Reload agents when workspace changes
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 resetAndReload()
@@ -438,7 +414,6 @@ struct AgentsView: View {
             )
         }
         .sheet(isPresented: $showingAddNewAgent) {
-            // In a real implementation, you would create an AddAgentView here
             VStack {
                 Text("Add New Agent")
                     .font(.title)
@@ -457,12 +432,9 @@ struct AgentsView: View {
         }
     }
     
-    // Helper function to setup notification observers
     private func setupTabBarNotifications() {
-        // Remove any existing observers first
         NotificationCenter.default.removeObserver(self)
         
-        // Add observers for tab bar visibility
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("HideTabBar"),
             object: nil,
@@ -534,7 +506,6 @@ struct AgentsView: View {
                         }
                     }
                     
-                    // Only show this if we might have more pages
                     if hasMorePages {
                         Color.clear
                             .frame(height: 50)
@@ -550,7 +521,6 @@ struct AgentsView: View {
                 resetAndReload()
             }
             
-            // Restored agent count text with smaller size
             HStack {
                 Text("Showing \(agents.count) of \(totalAgents) agent\(totalAgents == 1 ? "" : "s")")
                     .foregroundColor(.secondary)
@@ -597,7 +567,6 @@ struct AgentsView: View {
         isLoadingMore = true
         
         let formattedWorkspaceId = workspaceId.replacingOccurrences(of: ".", with: "_")
-        print("📱 Fetching more agents for page \(currentPage), workspace: \(formattedWorkspaceId)")
         
         APIService.shared.fetchAgents(
             page: currentPage,
@@ -609,32 +578,23 @@ struct AgentsView: View {
                 
                 switch result {
                 case .success(let response):
-                    // Get the new agents
                     let newAgents = response.data.items
                     
-                    // Add new agents to existing list
                     self.agents.append(contentsOf: newAgents)
                     
-                    // Re-sort all agents to ensure correct ordering
                     self.agents.sort { (agent1, agent2) -> Bool in
                         if agent1.status != agent2.status {
-                            // Sort by status (active first)
                             return agent1.status > agent2.status
                         } else {
-                            // If status is the same, sort alphabetically by name
                             return agent1.agentName.lowercased() < agent2.agentName.lowercased()
                         }
                     }
                     
                     self.totalAgents = response.data.total
-                    print("📱 Successfully loaded additional \(response.data.items.count) agents")
-                    print("📱 Total agents now: \(self.agents.count) of \(self.totalAgents)")
-                    
-                    // Check if there might be more pages
+
                     hasMorePages = response.data.items.count >= 10 // Assuming page size is 10
                     
                 case .failure(let error):
-                    print("📱 Error loading more agents: \(error.localizedDescription)")
                     self.errorMessage = "Failed to load more agents: \(error.localizedDescription)"
                     self.showErrorAlert = true
                 }
@@ -644,27 +604,17 @@ struct AgentsView: View {
     
     private func loadAgents() {
         guard let workspaceId = appState.currentWorkspace?.id else { 
-            print("📱 ERROR: No workspace ID available")
             return 
         }
         
         isLoading = true
         
         let formattedWorkspaceId = workspaceId.replacingOccurrences(of: ".", with: "_")
-        print("📱 AGENTS - Starting fetch for workspace: \(formattedWorkspaceId)")
-        print("📱 AGENTS - Page: \(currentPage), PageSize: 10")
         
-        // Construct the URL for debugging purposes
         let baseURL = "https://ai4edu-api.jerryang.org/v1/prod"
         let endpoint = "/admin/agents/agents"
         let debugURL = "\(baseURL)\(endpoint)?page=\(currentPage)&page_size=10&workspace_id=\(formattedWorkspaceId)"
-        print("📱 AGENTS - Request URL: \(debugURL)")
         
-        if let accessToken = TokenManager.shared.getAccessToken() {
-            print("📱 AGENTS - Using access token: \(accessToken.prefix(15))...")
-        } else {
-            print("📱 AGENTS - WARNING: No access token available")
-        }
         
         APIService.shared.fetchAgents(
             page: currentPage,
@@ -673,26 +623,14 @@ struct AgentsView: View {
         ) { result in
             DispatchQueue.main.async {
                 isLoading = false
-                print("📱 AGENTS - Response received")
                 
                 switch result {
                 case .success(let response):
-                    print("📱 AGENTS - SUCCESS! Message: \(response.message)")
-                    print("📱 AGENTS - Success flag: \(response.success)")
-                    print("📱 AGENTS - Total agents: \(response.data.total)")
-                    print("📱 AGENTS - Items count: \(response.data.items.count)")
                     
-                    if !response.data.items.isEmpty {
-                        print("📱 AGENTS - First agent: \(response.data.items[0].agentName) (ID: \(response.data.items[0].agentId))")
-                    }
-                    
-                    // Sort agents - active agents first, then disabled agents
                     let sortedAgents = response.data.items.sorted { (agent1, agent2) -> Bool in
                         if agent1.status != agent2.status {
-                            // Sort by status (active first)
                             return agent1.status > agent2.status
                         } else {
-                            // If status is the same, sort alphabetically by name
                             return agent1.agentName.lowercased() < agent2.agentName.lowercased()
                         }
                     }
@@ -700,12 +638,8 @@ struct AgentsView: View {
                     self.agents = sortedAgents
                     self.totalAgents = response.data.total
                     
-                    if self.agents.isEmpty {
-                        print("📱 AGENTS - API returned success but with empty agents array")
-                    }
                     
                 case .failure(let error):
-                    print("📱 AGENTS - ERROR: \(error.localizedDescription)")
                     
                     if let urlError = error as? URLError {
                         print("📱 AGENTS - URLError code: \(urlError.code.rawValue)")
@@ -736,7 +670,6 @@ struct AgentCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Top section: Name and status
             VStack(alignment: .leading, spacing: 6) {
                 Text(agent.agentName)
                     .font(.headline)
@@ -755,9 +688,7 @@ struct AgentCard: View {
             
             Divider()
             
-            // Bottom section: Buttons
             HStack(spacing: 12) {
-                // Chat button - always show with a filled style
                 Button(action: {
                     navigateToAgentDetail = true
                 }) {
@@ -773,7 +704,6 @@ struct AgentCard: View {
                     .cornerRadius(8)
                 }
                 
-                // Delete button - disabled for teachers, hidden for students
                 if role != "student" {
                     Button(action: {
                         // Delete action
@@ -796,7 +726,6 @@ struct AgentCard: View {
                     .disabled(role == "teacher") // Disable for teachers
                 }
                 
-                // Edit button - only for admins
                 if role == "admin" {
                     Button(action: {
                         // Edit action
@@ -842,7 +771,6 @@ struct WorkspaceRolesView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Display available workspaces in a grid
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 200))], spacing: 12) {
                 ForEach(workspaceRoles.keys.sorted(), id: \.self) { workspaceId in
                     if let role = workspaceRoles[workspaceId] {
@@ -925,25 +853,20 @@ struct WorkspaceRolesView: View {
     }
     
     private func selectWorkspace(id: String, role: String) {
-        // Create the course to save, with name if available, otherwise use ID
         let courseName = formatWorkspaceName(id)
         let course = Course(id: id, role: role, name: courseName)
         
-        // Save selected course
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
 
     }
     
-    // Helper to get a friendly workspace name from ID
     private func formatWorkspaceName(_ id: String) -> String {
-        // Try to find the existing course by ID to get its name
         let courses = CourseManager.shared.getCourses()
         if let existingCourse = courses.first(where: { $0.id == id }) {
             return existingCourse.name
         }
         
-        // Format the ID in a user-friendly way if no name is available
         let parts = id.components(separatedBy: ".")
         if parts.count >= 2 {
             let courseCode = parts[0]
@@ -968,7 +891,6 @@ struct WorkspaceRolesView: View {
     }
 }
 
-// Token expiration status view component
 struct ExpirationStatusView: View {
     let expirationDate: Date
     
@@ -1029,7 +951,6 @@ struct RosterView: View {
             loadUsersIfNeeded()
         }
         .onChange(of: appState.currentWorkspace?.id) { newId in
-            // Reload users when workspace changes
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 resetAndReload()
@@ -1066,7 +987,6 @@ struct RosterView: View {
     
     private func rosterListView() -> some View {
         VStack(spacing: 0) {
-            // Simplified table header - only show the required columns
             HStack {
                 Text("User ID")
                     .fontWeight(.semibold)
@@ -1087,7 +1007,6 @@ struct RosterView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(users) { user in
-                        // Simplified row showing only required fields
                         HStack {
                             Text("\(user.userId)")
                                 .font(.subheadline)
@@ -1123,7 +1042,6 @@ struct RosterView: View {
                         }
                     }
                     
-                    // Only show this if we might have more pages
                     if hasMorePages {
                         Color.clear
                             .frame(height: 50)
@@ -1137,7 +1055,6 @@ struct RosterView: View {
                 resetAndReload()
             }
             
-            // Footer with user count
             HStack {
                 Text("Showing \(users.count) of \(totalUsers) user\(totalUsers == 1 ? "" : "s")")
                     .foregroundColor(.secondary)
@@ -1180,7 +1097,6 @@ struct RosterView: View {
         isLoadingMore = true
         
         let formattedWorkspaceId = workspaceId.replacingOccurrences(of: ".", with: "_")
-        print("📱 Fetching more users for page \(currentPage), workspace: \(formattedWorkspaceId)")
         
         APIService.shared.fetchUserList(
             page: currentPage,
@@ -1192,17 +1108,12 @@ struct RosterView: View {
                 
                 switch result {
                 case .success(let response):
-                    // Add new users to existing list
                     users.append(contentsOf: response.data.items)
                     totalUsers = response.data.total
-                    print("📱 Successfully loaded additional \(response.data.items.count) users")
-                    print("📱 Total users now: \(users.count) of \(totalUsers)")
                     
-                    // Check if there might be more pages
-                    hasMorePages = response.data.items.count >= 10 // Assuming page size is 10
+                    hasMorePages = response.data.items.count >= 10
                     
                 case .failure(let error):
-                    print("📱 Error loading more users: \(error.localizedDescription)")
                     errorMessage = "Failed to load more users: \(error.localizedDescription)"
                     showErrorAlert = true
                 }
@@ -1216,7 +1127,6 @@ struct RosterView: View {
         isLoading = true
         
         let formattedWorkspaceId = workspaceId.replacingOccurrences(of: ".", with: "_")
-        print("📱 Fetching users for workspace: \(formattedWorkspaceId)")
         
         APIService.shared.fetchUserList(
             page: currentPage,
@@ -1232,15 +1142,7 @@ struct RosterView: View {
                     totalUsers = response.data.total
                     hasMorePages = response.data.items.count >= 10
                     
-                    print("📱 Successfully loaded \(response.data.items.count) users")
-                    print("📱 Total users available: \(response.data.total)")
-                    
-                    if users.isEmpty {
-                        print("📱 API returned success but with empty users array")
-                    }
-                    
                 case .failure(let error):
-                    print("📱 Error loading users: \(error.localizedDescription)")
                     errorMessage = "Failed to load users: \(error.localizedDescription)"
                     showErrorAlert = true
                 }

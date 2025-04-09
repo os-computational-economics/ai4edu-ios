@@ -17,6 +17,13 @@ struct SSOWebView: View {
     @State private var isLoading = true
     @State private var showLoadingIndicator = true
     @State private var opacity = 0.0
+    @State private var loadingTimerWorkItem: DispatchWorkItem? = nil
+    @State private var lastStateChange = Date()
+    @State private var minimumLoadingTimeElapsed = false
+    
+    private let showDelay: TimeInterval = 0.6
+    private let minimumLoadingTime: TimeInterval = 1.0
+    private let debounceInterval: TimeInterval = 0.3
     
     var body: some View {
         ZStack {
@@ -27,7 +34,6 @@ struct SSOWebView: View {
                 }
             
             VStack(spacing: 0) {
-                // Header with close button
                 HStack {
                     Text("Sign In")
                         .font(.headline)
@@ -46,7 +52,6 @@ struct SSOWebView: View {
                 }
                 .background(Color(UIColor.systemBackground))
                 
-                // Loading indicator - only show after a short delay and when loading
                 if showLoadingIndicator {
                     VStack {
                         ProgressView("Loading secure sign-in...")
@@ -57,25 +62,8 @@ struct SSOWebView: View {
                     .transition(.opacity)
                 }
                 
-                // Web view - always present but opacity controlled
                 WebViewRepresentable(url: url, isLoading: $isLoading, onLoadingChanged: { isLoading in
-                    // Use a delay to avoid showing/hiding the loader for brief loading changes
-                    if isLoading {
-                        // When loading starts, show indicator after a small delay
-                        // to avoid flashing for very quick loads
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            if self.isLoading { // Only show if still loading after delay
-                                withAnimation(.easeIn(duration: 0.2)) {
-                                    self.showLoadingIndicator = true
-                                }
-                            }
-                        }
-                    } else {
-                        // When loading finishes, hide indicator with animation
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            self.showLoadingIndicator = false
-                        }
-                    }
+                    handleLoadingStateChange(isLoading)
                 }, onNavigationChange: { url in
                     if url.absoluteString.starts(with: "ai4edu://callback") {
                         if APIService.shared.handleSSOCallback(url: url) {
@@ -97,8 +85,47 @@ struct SSOWebView: View {
                 withAnimation(.easeOut(duration: 0.3)) {
                     opacity = 1.0
                 }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + minimumLoadingTime) {
+                    minimumLoadingTimeElapsed = true
+                    if !isLoading {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            showLoadingIndicator = false
+                        }
+                    }
+                }
             }
         }
+    }
+    
+    private func handleLoadingStateChange(_ isNowLoading: Bool) {
+        loadingTimerWorkItem?.cancel()
+        
+        let timeSinceLastChange = Date().timeIntervalSince(lastStateChange)
+        lastStateChange = Date()
+        
+        let actualDelay = timeSinceLastChange < debounceInterval ? 
+            debounceInterval : (isNowLoading ? showDelay : 0.1)
+        
+        let workItem = DispatchWorkItem {
+            if isNowLoading {
+                if self.isLoading {
+                    withAnimation(.easeIn(duration: 0.2)) {
+                        self.showLoadingIndicator = true
+                    }
+                }
+            } else {
+                if minimumLoadingTimeElapsed {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        self.showLoadingIndicator = false
+                    }
+                }
+            }
+        }
+        
+        loadingTimerWorkItem = workItem
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + actualDelay, execute: workItem)
     }
     
     private func dismiss() {
@@ -108,7 +135,6 @@ struct SSOWebView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             isPresented = false
-            // Call onCancel callback when user dismisses the login window
             onCancel?()
         }
     }
@@ -177,7 +203,6 @@ struct WebViewRepresentable: UIViewRepresentable {
         private func updateLoadingState() {
             let isLoading = !pendingNavigations.isEmpty
             
-            // Update parent loading state on main thread
             DispatchQueue.main.async {
                 if self.parent.isLoading != isLoading {
                     self.parent.isLoading = isLoading

@@ -21,7 +21,6 @@ struct LoginView: View {
     
     var body: some View {
         ZStack {
-            // Animated gradient background
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color.blue.opacity(0.6),
@@ -37,11 +36,9 @@ struct LoginView: View {
                 animateBackground = true
             }
             
-            // Content
             VStack {
                 Spacer()
                 
-                // Logo and app name
                 VStack(spacing: 20) {
                     Image("AI4EDULogo_White")
                         .resizable()
@@ -66,7 +63,6 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                // Login card
                 VStack(spacing: 25) {
                     Text("Welcome")
                         .font(.title)
@@ -81,12 +77,10 @@ struct LoginView: View {
                         .padding(.horizontal)
                     
                     Button(action: {
-                        // Add press animation
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                             buttonScale = 0.95
                         }
                         
-                        // Reset scale after a short delay
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                 buttonScale = 1.0
@@ -115,27 +109,6 @@ struct LoginView: View {
                             .padding(.top, 5)
                     }
                     
-                    // Terms and privacy
-//                    VStack(spacing: 8) {
-//                        Text("By signing in, you agree to our")
-//                            .font(.caption)
-//                            .foregroundColor(.secondary)
-//                        
-//                        HStack(spacing: 3) {
-//                            Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
-//                                .font(.caption)
-//                                .foregroundColor(.blue)
-//                            
-//                            Text("and")
-//                                .font(.caption)
-//                                .foregroundColor(.secondary)
-//                            
-//                            Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
-//                                .font(.caption)
-//                                .foregroundColor(.blue)
-//                        }
-//                    }
-//                    .padding(.top, 10)
                 }
                 .padding(30)
                 .background(
@@ -148,36 +121,22 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                // Footer
-//                HStack(spacing: 4) {
-//                    Text("Need help?")
-//                        .font(.footnote)
-//                        .foregroundColor(.white.opacity(0.8))
-//                    
-//                    Link("Contact Support", destination: URL(string: "mailto:support@ai4edu.example.com")!)
-//                        .font(.footnote)
-//                        .foregroundColor(.white)
-//                }
-//                .padding(.bottom, 20)
             }
             .padding()
             
             if showWebView, let ssoURL = APIService.shared.getSSOURL(returnURL: "ai4edu://callback") {
                 SSOWebView(url: ssoURL, isPresented: $showWebView, onSuccessfulLogin: {
-                    // Trigger login with animation via AppState
                     isLoggingIn = false
                     appState.login()
                 }, onCancel: {
-                    // Reset loading state when login is canceled
                     isLoggingIn = false
                 })
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut(duration: 0.3), value: showWebView)
-                .zIndex(1) // Ensure WebView appears above other elements
+                .zIndex(1) 
             }
         }
         .onAppear {
-            // Animate entry
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
                 cardOffset = 0
                 logoScale = 1.0
@@ -189,9 +148,7 @@ struct LoginView: View {
     private func handleSSOLogin() {
         isLoggingIn = true
         
-        // Add visual feedback with slight delay
         withAnimation {
-            // Simulate a short delay for better UX
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 withAnimation {
                     showWebView = true

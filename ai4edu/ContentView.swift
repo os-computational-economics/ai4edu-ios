@@ -53,12 +53,9 @@ struct MainView: View {
         NavigationView {
             ZStack {
                 if appState.currentWorkspace != nil && !appState.currentWorkspace!.id.isEmpty {
-                    // Main App Content with Integrated Navigation
                     VStack(spacing: 0) {
-                        // Current workspace name banner
                         if let workspace = appState.currentWorkspace, !hideTabBar {
                             HStack {
-                                // Workspace icon
                                 ZStack {
                                     Circle()
                                         .fill(roleColor(for: workspace.role).opacity(0.2))
@@ -90,19 +87,14 @@ struct MainView: View {
                             .background(Color(.systemGray6).opacity(0.3))
                         }
                         
-                        // Main content area based on selected tab
                         if selectedTab == 0 {
-                            // Main functionality tab content
                             mainTabContent
                         } else {
-                            // Settings tab content
                             settingsTabContent
                         }
                         
-                        // Bottom tab bar
                         if !hideTabBar {
                             HStack {
-                                // Main tab
                                 Spacer()
                                 Button(action: { selectedTab = 0 }) {
                                     VStack(spacing: 2) {
@@ -116,7 +108,6 @@ struct MainView: View {
                                 
                                 Spacer()
                                 
-                                // Settings tab
                                 Button(action: { selectedTab = 1 }) {
                                     VStack(spacing: 2) {
                                         Image(systemName: "gear")
@@ -137,9 +128,7 @@ struct MainView: View {
                         }
                     }
                 } else {
-                    // Home page with two-column layout
                     VStack(spacing: 0) {
-                        // App header
                         HStack {
                             Image("AI4EDULogo")
                                 .resizable()
@@ -156,7 +145,6 @@ struct MainView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
                         
-                        // Welcome text
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Welcome to AI4EDU")
                                 .font(.title)
@@ -171,16 +159,12 @@ struct MainView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 16)
                         
-                        // Content based on selected home tab
                         if selectedTab == 0 {
-                            // Workspaces content
                             workspacesTabContent
                         } else {
-                            // Settings content
                             settingsTabContent
                         }
                         
-                        // Bottom tab bar for home page
                         HStack {
                             Spacer()
                             Button(action: { selectedTab = 0 }) {
@@ -214,10 +198,8 @@ struct MainView: View {
                         )
                     }
                     .onAppear {
-                        // Get workspace roles from token
                         workspaceRoles = TokenManager.shared.getWorkspaceRoles()
                     
-                    // If there's only one workspace, auto-select it
                     if workspaceRoles.count == 1, 
                        let workspaceId = workspaceRoles.keys.first,
                        let role = workspaceRoles[workspaceId] {
@@ -226,7 +208,6 @@ struct MainView: View {
                     }
                 }
             
-                // Workspace selector overlay
             if showWorkspaceSelector {
                     Color.black.opacity(0.3)
                         .edgesIgnoringSafeArea(.all)
@@ -234,9 +215,7 @@ struct MainView: View {
                             showWorkspaceSelector = false
                         }
                     
-                    // Workspace selector with list of available workspaces
                     VStack(spacing: 0) {
-                        // Header
                         HStack {
                             Text("Select Workspace")
                                 .font(.headline)
@@ -256,7 +235,6 @@ struct MainView: View {
                         
                         Divider()
                         
-                        // Workspace list - Simple list without search
                         ScrollView {
                             VStack(spacing: 12) {
                                 ForEach(workspaceRoles.keys.sorted(), id: \.self) { workspaceId in
@@ -293,19 +271,14 @@ struct MainView: View {
             .onReceive(NotificationCenter.default.publisher(
                 for: NSNotification.Name("ShowAgentDetailWithThread"))
             ) { notification in
-                print("📱 MAIN-VIEW - Received notification to show agent detail")
                 
-                // Use main thread to update UI
                 DispatchQueue.main.async {
                     if let agent = notification.userInfo?["agent"] as? Agent,
                        let threadId = notification.userInfo?["threadId"] as? String {
-                        print("📱 MAIN-VIEW - Setting up navigation to agent: \(agent.agentName), thread: \(threadId)")
                         
-                        // Set values first, then trigger navigation
                         self.agentForContinue = agent
                         self.threadIdForContinue = threadId
                         
-                        // Use short delay to ensure state is updated before navigation
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             self.navigateToAgentDetail = true
                         }
@@ -329,10 +302,8 @@ struct MainView: View {
         .navigationViewStyle(StackNavigationViewStyle())
         .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         .onAppear {
-            // Get workspace roles from token
             workspaceRoles = TokenManager.shared.getWorkspaceRoles()
             
-            // Setup notification observers for tab bar visibility
             setupTabBarNotifications()
             
             if let accessToken = TokenManager.shared.getAccessToken(),
@@ -345,10 +316,8 @@ struct MainView: View {
         }
     }
     
-    // Main tab content (Agents, Roster, Chat History)
     private var mainTabContent: some View {
         VStack(spacing: 0) {
-            // Navigation sections - only show when not hiding tab bar
             if !hideTabBar {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 5) {
@@ -359,7 +328,6 @@ struct MainView: View {
                             action: { appState.currentTab = .agents }
                         )
                         
-                        // Only show Roster tab for teachers and admins
                         if let role = appState.currentWorkspace?.role,
                            role.lowercased() == "teacher" || role.lowercased() == "admin" {
                             NavigationTabButton(
@@ -386,7 +354,6 @@ struct MainView: View {
                 Divider()
             }
             
-            // Dashboard content
             DashboardView()
         }
     }
@@ -395,7 +362,6 @@ struct MainView: View {
     private var settingsTabContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Section header
                 Text("SETTINGS")
                     .font(.footnote)
                     .fontWeight(.medium)
@@ -404,7 +370,6 @@ struct MainView: View {
                     .padding(.horizontal)
                     .padding(.top, 16)
                 
-                // Dark Mode Toggle
                 VStack(alignment: .leading, spacing: 10) {
                     Text("APPEARANCE")
                         .font(.footnote)
@@ -435,7 +400,6 @@ struct MainView: View {
                 }
                 .padding(.horizontal)
                 
-                // Logout option
                 Button(action: {
                     appState.logout()
                 }) {
@@ -462,11 +426,9 @@ struct MainView: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.horizontal)
                 
-                // Show tokens option with toggle functionality
                 TokensView()
                     .padding(.horizontal)
                 
-                // App information
                 VStack(alignment: .leading, spacing: 10) {
                     Text("ABOUT THE APP")
                         .font(.footnote)
@@ -503,7 +465,6 @@ struct MainView: View {
         .background(Color(.systemGray6).opacity(0.3))
     }
     
-    // Workspaces tab content for home page
     private var workspacesTabContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 15) {
@@ -528,8 +489,7 @@ struct MainView: View {
                     }
                 }
                 
-                // Getting Started section
-                Text("GETTING STARTED")
+                    Text("GETTING STARTED")
                     .font(.footnote)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
@@ -558,24 +518,19 @@ struct MainView: View {
     }
     
     private func selectWorkspace(id: String, role: String) {
-        // Create the course to save, with name if available, otherwise use ID
         let courseName = formatWorkspaceName(id)
         let course = Course(id: id, role: role, name: courseName)
         
-        // Save selected course
         CourseManager.shared.saveSelectedCourse(course)
         appState.currentWorkspace = course
     }
     
-    // Helper to get a friendly workspace name from ID
     private func formatWorkspaceName(_ id: String) -> String {
-        // Try to find the existing course by ID to get its name
         let courses = CourseManager.shared.getCourses()
         if let existingCourse = courses.first(where: { $0.id == id }) {
             return existingCourse.name
         }
         
-        // Format the ID in a user-friendly way if no name is available
         let parts = id.components(separatedBy: ".")
         if parts.count >= 2 {
             let courseCode = parts[0]
@@ -599,12 +554,9 @@ struct MainView: View {
         }
     }
     
-    // Helper function to setup notification observers
     private func setupTabBarNotifications() {
-        // Remove any existing observers first
         NotificationCenter.default.removeObserver(self)
         
-        // Add observers for tab bar visibility
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("HideTabBar"),
             object: nil,
@@ -625,16 +577,13 @@ struct MainView: View {
     }
 }
 
-// Integrated Home View without sidebar
 struct IntegratedHomeView: View {
     let workspaceRoles: [String: String]
     let onSelectWorkspace: (String, String) -> Void
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             VStack(spacing: 15) {
-                // App logo and title
                 HStack {
                     Image("AI4EDULogo")
                         .resizable()
@@ -647,9 +596,7 @@ struct IntegratedHomeView: View {
                     
                     Spacer()
                     
-                    // Logout button
                     Button(action: {
-                        // Logout action
                     }) {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -662,7 +609,6 @@ struct IntegratedHomeView: View {
                     }
                 }
                 
-                // Welcome message
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Welcome to AI4EDU")
                         .font(.title)
@@ -678,15 +624,12 @@ struct IntegratedHomeView: View {
             .padding()
             .background(Color(UIColor.systemBackground))
             
-            // Divider
             Rectangle()
                 .frame(height: 1)
                 .foregroundColor(Color(.systemGray5))
             
-            // Content
             ScrollView {
                 LazyVStack(spacing: 15) {
-                    // Section - Your Workspaces
                     VStack(alignment: .leading, spacing: 15) {
                         Text("YOUR WORKSPACES")
                             .font(.footnote)
@@ -710,7 +653,6 @@ struct IntegratedHomeView: View {
                     }
                     .padding(.vertical)
                     
-                    // Section - Getting Started
                     VStack(alignment: .leading, spacing: 15) {
                         Text("GETTING STARTED")
                             .font(.footnote)
@@ -748,7 +690,6 @@ struct IntegratedHomeView: View {
     }
     
     private func formatWorkspaceName(_ id: String) -> String {
-        // Format the ID in a user-friendly way
         let parts = id.components(separatedBy: ".")
         if parts.count >= 2 {
             let courseCode = parts[0]
@@ -760,7 +701,6 @@ struct IntegratedHomeView: View {
     }
 }
 
-// Navigation tab button for the main view
 struct NavigationTabButton: View {
     let title: String
     let icon: String
@@ -785,7 +725,6 @@ struct NavigationTabButton: View {
     }
 }
 
-// Workspace selector row for the workspace picker
 struct WorkspaceSelectorRow: View {
     let workspaceId: String
     let role: String
@@ -795,7 +734,6 @@ struct WorkspaceSelectorRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 12) {
-                // Workspace icon
                 ZStack {
                     Circle()
                         .fill(roleColor(for: role).opacity(0.2))
@@ -806,7 +744,6 @@ struct WorkspaceSelectorRow: View {
                         .foregroundColor(roleColor(for: role))
                 }
                 
-                // Details
                 VStack(alignment: .leading, spacing: 4) {
                     Text(formatWorkspaceName(workspaceId))
                         .font(.headline)
@@ -893,7 +830,6 @@ struct HomeWorkspaceCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 15) {
-                // Workspace icon
                 ZStack {
                     Circle()
                         .fill(roleColor(for: role).opacity(0.2))
@@ -904,7 +840,6 @@ struct HomeWorkspaceCard: View {
                         .foregroundColor(roleColor(for: role))
                 }
                 
-                // Details
                 VStack(alignment: .leading, spacing: 4) {
                     Text(formatWorkspaceName(workspaceId))
                         .font(.headline)
@@ -917,7 +852,6 @@ struct HomeWorkspaceCard: View {
                 
                 Spacer()
                 
-                // Role badge and action indicator
                 HStack {
                     Text(role.capitalized)
                         .font(.caption)
@@ -942,7 +876,6 @@ struct HomeWorkspaceCard: View {
     }
     
     private func formatWorkspaceName(_ id: String) -> String {
-        // Format the ID in a user-friendly way
         let parts = id.components(separatedBy: ".")
         if parts.count >= 2 {
             let courseCode = parts[0]
@@ -974,7 +907,6 @@ struct FeatureCard: View {
     
     var body: some View {
         HStack(spacing: 15) {
-            // Icon
             Image(systemName: icon)
                 .font(.system(size: 24))
                 .foregroundColor(.blue)
@@ -1002,13 +934,11 @@ struct FeatureCard: View {
     }
 }
 
-// TokensView component for settings tab
 struct TokensView: View {
     @State private var showTokens: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Toggle button
             Button(action: {
                 showTokens.toggle()
             }) {
@@ -1034,10 +964,8 @@ struct TokensView: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Token information display (conditionally shown)
             if showTokens {
                 VStack(alignment: .leading, spacing: 10) {
-                    // Decoded Token Information
                     Text("Token Information:")
                         .font(.headline)
                         .fontWeight(.bold)
@@ -1092,7 +1020,6 @@ struct TokensView: View {
                     Divider()
                         .padding(.vertical, 5)
                     
-                    // Raw Token Display
                     Text("Access Token (Raw):")
                         .font(.caption)
                         .fontWeight(.bold)

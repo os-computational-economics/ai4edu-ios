@@ -19,7 +19,6 @@ struct AgentFilesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Text("Agent Files")
                     .font(.headline)
@@ -47,7 +46,6 @@ struct AgentFilesView: View {
                         ForEach(displayedFiles) { file in
                             FileRow(file: file, isSelected: selectedFileID == file.id) {
                                 self.selectedFileID = file.id
-                                // Handle file selection - would trigger document viewer
                             }
                         }
                     }
@@ -69,8 +67,6 @@ struct AgentFilesView: View {
     private func loadAgentFiles() {
         isLoading = true
         
-        // In a real implementation, we would load files from the API
-        // For the current implementation, we'll just use the agent's file info
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let files = agent.agentFiles.map { fileID, fileName in
                 AgentFile(
@@ -161,10 +157,8 @@ struct FileRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // File icon
                 FileTypeIcon(fileType: file.type)
                 
-                // File info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(file.name)
                         .font(.subheadline)
@@ -179,7 +173,6 @@ struct FileRow: View {
                 
                 Spacer()
                 
-                // Selection indicator
                 if isSelected {
                     Image(systemName: "checkmark")
                         .foregroundColor(.blue)
@@ -266,8 +259,6 @@ struct AgentFile: Identifiable {
     let size: String
     let dateAdded: String
 }
-
-// FileType is defined in ModelTypes.swift
 
 // MARK: - Preview
 

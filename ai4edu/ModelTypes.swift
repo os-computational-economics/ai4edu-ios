@@ -9,7 +9,6 @@ import Foundation
 
 // MARK: - Message Types
 
-/// Base message model used throughout the app
 struct Message: Identifiable {
     let id: String
     var content: String
@@ -23,7 +22,6 @@ struct Message: Identifiable {
 
 // MARK: - API Response Types
 
-/// Response from a chat message
 struct ChatResponse {
     let threadId: String
     let messageId: String
@@ -31,7 +29,6 @@ struct ChatResponse {
     let sources: [Source]?
 }
 
-/// Message response from streaming chat
 struct MessageResponse: Codable {
     let response: String
     let source: [Source]?
@@ -46,17 +43,14 @@ struct MessageResponse: Codable {
         case msgId = "msg_id"
     }
     
-    // For backward compatibility with existing code
     var messageId: String {
         return msgId ?? UUID().uuidString
     }
     
-    // For backward compatibility with existing code
     var content: String {
         return response
     }
     
-    // For backward compatibility with existing code
     var sources: [Source]? {
         return source?.isEmpty == false ? source : nil
     }
