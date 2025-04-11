@@ -368,14 +368,3 @@ struct ThreadListItem: View {
         return id
     }
 }
-
-// MARK: - Preview
-
-struct ThreadHistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            ThreadHistoryView()
-                .environmentObject(AppState())
-        }
-    }
-}

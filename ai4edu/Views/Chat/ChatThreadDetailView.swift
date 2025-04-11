@@ -298,22 +298,3 @@ struct ChatThreadDetailView: View {
         }
     }
 }
-
-// MARK: - Preview
-
-struct ChatThreadDetailView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            ChatThreadDetailView(
-                thread: ThreadInfo(
-                    threadId: "thread-123",
-                    createdAt: "2023-03-25 10:30:00.000000",
-                    agentId: "agent-456", 
-                    userId: 7,
-                    workspaceId: "csds_392",
-                    agentName: "Math Tutor"
-                )
-            )
-        }
-    }
-}

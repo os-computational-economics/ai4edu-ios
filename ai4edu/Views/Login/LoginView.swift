@@ -157,15 +157,3 @@ struct LoginView: View {
         }
     }
 }
-
-struct LoginView_Previews: PreviewProvider {
-    static var previews: some View {
-        LoginView()
-            .environmentObject(AppState())
-            .preferredColorScheme(.dark)
-        
-        LoginView()
-            .environmentObject(AppState())
-            .preferredColorScheme(.light)
-    }
-}

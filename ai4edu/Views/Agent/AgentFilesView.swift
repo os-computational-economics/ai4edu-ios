@@ -259,16 +259,3 @@ struct AgentFile: Identifiable {
     let size: String
     let dateAdded: String
 }
-
-// MARK: - Preview
-
-struct AgentFilesView_Previews: PreviewProvider {
-    static var previews: some View {
-        AgentFilesView(
-            agent: Agent.mockAgents[0],
-            fileIDs: ["651f1b90-5f1b-47df-b1ad-42e1a18b8d7c"]
-        )
-        .frame(width: 300, height: 500)
-        .previewLayout(.sizeThatFits)
-    }
-}

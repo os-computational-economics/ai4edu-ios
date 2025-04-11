@@ -943,13 +943,3 @@ class StreamingObserver: ObservableObject {
         }
     }
 }
-
-// MARK: - Preview
-
-struct AgentDetailView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            AgentDetailView(agent: Agent.mockAgents[0])
-        }
-    }
-} 

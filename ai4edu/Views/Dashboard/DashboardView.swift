@@ -1150,27 +1150,3 @@ struct RosterView: View {
         }
     }
 }
-
-// Preview providers
-struct DashboardView_Previews: PreviewProvider {
-    static var previews: some View {
-        let appState = AppState()
-        appState.currentWorkspace = Course(id: "CSDS392.F24", role: "student", name: "iOS App Development")
-        appState.currentTab = .agents
-        
-        return DashboardView()
-            .environmentObject(appState)
-    }
-}
-
-struct SidebarView_Previews: PreviewProvider {
-    static var previews: some View {
-        let appState = AppState()
-        appState.currentWorkspace = Course(id: "CSDS392.F24", role: "student", name: "iOS App Development")
-        
-        return NavigationView {
-            SidebarView(showTokens: true)
-                .environmentObject(appState)
-        }
-    }
-} 
