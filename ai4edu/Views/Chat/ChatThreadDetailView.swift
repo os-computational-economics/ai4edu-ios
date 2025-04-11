@@ -35,7 +35,7 @@ struct ChatThreadDetailView: View {
                         .font(.headline)
                     
                     HStack {
-                        Text(formatWorkspaceId(thread.workspaceId))
+                        Text(thread.workspaceId)
                             .font(.caption)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -242,10 +242,7 @@ struct ChatThreadDetailView: View {
         
         return dateString
     }
-    
-    private func formatWorkspaceId(_ id: String) -> String {
-        return id.replacingOccurrences(of: "_", with: ".")
-    }
+
     
     private func parseDate(_ id: String) -> Date {
         if id.contains("#"), let timeString = id.components(separatedBy: "#").last,

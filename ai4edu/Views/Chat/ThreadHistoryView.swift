@@ -243,73 +243,6 @@ struct ThreadHistoryView: View {
     }
 }
 
-// MARK: - Supporting Views
-
-struct ThreadCard: View {
-    let thread: ThreadInfo
-    var isSelected: Bool = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(thread.agentName)
-                    .font(.headline)
-                    .lineLimit(1)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text(formatDate(thread.createdAt))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            HStack {
-                Text("Thread ID: \(thread.threadId)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text(formatWorkspaceId(thread.workspaceId))
-                    .font(.caption)
-                    .padding(4)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(4)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(UIColor.systemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-        )
-        .contentShape(Rectangle())
-    }
-    
-    private func formatDate(_ dateString: String) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
-        
-        if let date = dateFormatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateStyle = .short
-            displayFormatter.timeStyle = .short
-            
-            return displayFormatter.string(from: date)
-        }
-        
-        return dateString
-    }
-    
-    private func formatWorkspaceId(_ id: String) -> String {
-        return id.replacingOccurrences(of: "_", with: ".")
-    }
-}
-
 // MARK: - Thread List Item
 
 struct ThreadListItem: View {
@@ -327,7 +260,8 @@ struct ThreadListItem: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text(formatWorkspaceId(thread.workspaceId))
+                    Text(thread.workspaceId)
+//                    Text(formatWorkspaceId(thread.workspaceId))
                         .font(.caption)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
@@ -359,12 +293,5 @@ struct ThreadListItem: View {
         
         return dateString
     }
-    
-    private func formatWorkspaceId(_ id: String) -> String {
-        let parts = id.replacingOccurrences(of: "_", with: ".").components(separatedBy: ".")
-        if parts.count >= 2 {
-            return parts[0]
-        }
-        return id
-    }
+
 }

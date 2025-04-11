@@ -145,7 +145,7 @@ struct AgentDetailView: View {
                         }
                         
                         HStack(spacing: 12) {
-                            Text("Workspace: \(formatWorkspaceId(agent.workspaceId))")
+                            Text("Workspace: \(agent.workspaceId)")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
@@ -161,16 +161,7 @@ struct AgentDetailView: View {
                     }
                     
                     Spacer()
-                    
-                    if fullScreenMode {
-                        Button(action: {
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.gray)
-                        }
-                    }
+
                 }
                 
                 if !fullScreenMode {
@@ -239,11 +230,10 @@ struct AgentDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                if fullScreenMode {
-                    Color.clear.frame(width: 0, height: 0)
-                }
+                EmptyView()
             }
         }
+        .navigationBarBackButtonHidden(true)
         .onAppear {
             if fullScreenMode {
                 NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
@@ -484,7 +474,7 @@ struct AgentDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         detailRow(title: "Agent ID", value: agent.agentId)
                         detailRow(title: "Status", value: agent.status == 1 ? "Active" : "Disabled")
-                        detailRow(title: "Workspace", value: formatWorkspaceId(agent.workspaceId))
+                        detailRow(title: "Workspace", value: agent.workspaceId)
                         if !agent.creator.isEmpty {
                             detailRow(title: "Created By", value: agent.creator)
                         }
@@ -566,8 +556,8 @@ struct AgentDetailView: View {
                                 .cornerRadius(8)
                         }
                         
-                        Divider()
-                            .padding(.top, 8)
+//                        Divider()
+//                            .padding(.top, 8)
                     }
                     .padding()
                     .background(Color(UIColor.systemBackground))
@@ -648,11 +638,6 @@ struct AgentDetailView: View {
     }
     
     // MARK: - Helper Functions
-    
-    private func formatWorkspaceId(_ id: String) -> String {
-        let formattedId = id.replacingOccurrences(of: "_", with: ".")
-        return formattedId
-    }
     
     private func sendMessage() {
         print("messageTExt: \(messageText)")
