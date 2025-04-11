@@ -204,7 +204,6 @@ class TokenManager {
             let parts = tokenString.components(separatedBy: ".")
             
             if parts.count >= 2 {
-                let headerBase64 = parts[0]
                 let payloadBase64 = parts[1]
                 
                 if let payloadData = decodeBase64URLEncoded(payloadBase64),
@@ -309,11 +308,7 @@ class TokenManager {
     }
     
     func debugPrintToken() {
-        
-        guard let token = getAccessToken() else {
-            return
-        }
-        
+
         guard let decoded = decodeToken() else {
             print("Failed to decode token.")
             return

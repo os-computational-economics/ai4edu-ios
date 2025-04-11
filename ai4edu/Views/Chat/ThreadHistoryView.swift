@@ -122,7 +122,7 @@ struct ThreadHistoryView: View {
         .onAppear {
             loadThreadsIfNeeded()
         }
-        .onChange(of: appState.currentWorkspace?.id) { newId in
+        .onChange(of: appState.currentWorkspace?.id) { oldId, newId in
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 refreshThreads()

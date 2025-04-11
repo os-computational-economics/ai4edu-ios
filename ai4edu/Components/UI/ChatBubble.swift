@@ -123,7 +123,7 @@ struct ChatBubble: View {
                             Color(UIColor(red: 1.0, green: 0.97, blue: 0.93, alpha: 1.0)))
                 .cornerRadius(20)
                 .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: message.isFromUser ? .trailing : .leading)
-                .onChange(of: message.text) { newText in
+                .onChange(of: message.text) { oldText, newText in
                     currentText = newText
                 }
             

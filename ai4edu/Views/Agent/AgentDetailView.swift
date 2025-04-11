@@ -365,27 +365,27 @@ struct AgentDetailView: View {
                                                                  for: nil)
                                 }
                         )
-                        .onChange(of: messages.count) { _ in
+                        .onChange(of: messages.count) {
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
-                        .onChange(of: isLoading) { _ in
+                        .onChange(of: isLoading) {
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
-                        .onChange(of: messageUpdateCounter) { _ in
+                        .onChange(of: messageUpdateCounter) {
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
-                        .onChange(of: streamObserver.lastUpdatedId) { _ in
+                        .onChange(of: streamObserver.lastUpdatedId) {
                             withAnimation {
                                 scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
                         }
-                        .onChange(of: messageText) { _ in
+                        .onChange(of: messageText) {
                             if !messages.isEmpty {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     withAnimation {
@@ -710,10 +710,10 @@ struct AgentDetailView: View {
         var previousMessages: [[String: Any]] = []
         
         if messages.isEmpty {
-            let apiUrl = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
+            _ = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
         }
         
-        for (index, message) in messages.enumerated() {
+        for (_, message) in messages.enumerated() {
             let role = message.isFromUser ? "user" : "assistant"
             previousMessages.append([
                 "role": role,
@@ -778,7 +778,7 @@ struct AgentDetailView: View {
                             self.messageUpdateCounter += 1
                         }
                         
-                    case .failure(let error):
+                    case .failure(_):
                         
                         if let index = self.messages.firstIndex(where: { $0.id == placeholderId }) {
                             self.messages.remove(at: index)
@@ -852,7 +852,7 @@ struct AgentDetailView: View {
         
         currentThreadId = threadId
         
-        let apiEndpoint = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
+        _ = "ai4edu-api.jerryang.org/v1/prod/admin/threads/get_thread/\(threadId)"
         
         ChatService.shared.getThreadMessages(threadId: threadId) { result in
             DispatchQueue.main.async {

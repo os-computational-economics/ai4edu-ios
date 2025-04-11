@@ -390,7 +390,7 @@ struct MainView: View {
                         
                         Toggle("", isOn: $appState.isDarkMode)
                             .labelsHidden()
-                            .onChange(of: appState.isDarkMode) { _ in
+                            .onChange(of: appState.isDarkMode) { 
                                 appState.toggleDarkMode()
                             }
                     }

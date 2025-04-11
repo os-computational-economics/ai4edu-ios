@@ -528,8 +528,6 @@ func parseInlineFormatting(_ text: String) -> [TextPart] {
     var parts: [TextPart] = []
     
     // Regex patterns for bold, italic, and inline code
-    let boldPattern = #"\*\*(.*?)\*\*"#
-    let italicPattern = #"\*(.*?)\*"#
     let inlineCodePattern = #"`(.*?)`"#
     
     // First, find all inline code since it can contain asterisks

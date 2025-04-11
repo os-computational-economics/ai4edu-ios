@@ -248,7 +248,7 @@ struct ChatThreadDetailView: View {
     }
     
     private func parseDate(_ id: String) -> Date {
-        if id.contains("#"), let timeString = id.components(separatedBy: "#").last, 
+        if id.contains("#"), let timeString = id.components(separatedBy: "#").last,
            let timeInterval = Double(timeString) {
             return Date(timeIntervalSince1970: timeInterval / 1000.0)
         }
@@ -272,7 +272,7 @@ struct ChatThreadDetailView: View {
                         self.navigateToContinueChat = true
                     }
                     
-                case .failure(let error):
+                case .failure(_):
                     let fallbackAgent = Agent(
                         agentId: self.thread.agentId,
                         agentName: self.thread.agentName,

@@ -318,8 +318,7 @@ class ChatService {
                 
                 print("📱 CHAT-API - Found \(events.count) events in response")
                 
-                if let lastEvent = events.last?.dropFirst(6) { 
-                    do {
+                if let lastEvent = events.last?.dropFirst(6) {
                         let jsonData = Data(lastEvent.utf8)
                         
                         if let responseDict = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any],
@@ -330,7 +329,7 @@ class ChatService {
                             var sources: [Source]? = nil
                             if let sourceArray = responseDict["source"] as? [[String: Any]], !sourceArray.isEmpty {
                                 sources = []
-                                for (index, sourceItem) in sourceArray.enumerated() {
+                                for (_, sourceItem) in sourceArray.enumerated() {
                                     if let fileId = sourceItem["file_id"] as? String,
                                        let fileName = sourceItem["file_name"] as? String,
                                        let page = sourceItem["page"] as? Int {
@@ -355,14 +354,6 @@ class ChatService {
                                 completion(.failure(APIError.decodingError))
                             }
                         }
-                    } catch {
-                        if let jsonString = String(data: Data(lastEvent.utf8), encoding: .utf8) {
-                            print("📱 CHAT-API - JSON that failed to decode: \(jsonString)")
-                        }
-                        DispatchQueue.main.async {
-                            completion(.failure(error))
-                        }
-                    }
                 } else {
                     DispatchQueue.main.async {
                         completion(.failure(APIError.noData))
@@ -468,7 +459,6 @@ class ChatService {
                         eventCounter += 1
                         let event = eventString.dropFirst(6)
                         
-                        do {
                             let jsonData = Data(event.utf8)
                             if let responseDict = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any],
                                let responseText = responseDict["response"] as? String {
@@ -484,9 +474,6 @@ class ChatService {
                                     print("📱 CHAT-API - [Stream] Raw JSON: \(jsonString)")
                                 }
                             }
-                        } catch {
-                            print("📱 CHAT-API - [Stream] Error parsing event: \(error)")
-                        }
                     }
                     
                     if !lastResponse.isEmpty {
@@ -602,7 +589,7 @@ class ChatService {
                 
                 for line in lines where line.hasPrefix("data: ") {
                     eventCount += 1
-                    let event = line.dropFirst(6) 
+                    let event = line.dropFirst(6)
                     
                     do {
                         if let data = event.data(using: .utf8),
@@ -621,7 +608,7 @@ class ChatService {
                                     let newContent = String(text.dropFirst(previousLength))
                                     if !newContent.isEmpty {
                                         responseText = text
-                                        onChunk(text) 
+                                        onChunk(text)
                                         previousLength = text.count
                                     }
                                 }
@@ -629,7 +616,7 @@ class ChatService {
                             
                             if let sourceArray = responseDict["source"] as? [[String: Any]], !sourceArray.isEmpty {
                                 sources = []
-                                for (index, sourceItem) in sourceArray.enumerated() {
+                                for (_, sourceItem) in sourceArray.enumerated() {
                                     if let fileId = sourceItem["file_id"] as? String,
                                        let fileName = sourceItem["file_name"] as? String,
                                        let page = sourceItem["page"] as? Int {

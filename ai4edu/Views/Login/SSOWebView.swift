@@ -7,7 +7,7 @@
 
 
 import SwiftUI
-import WebKit
+@preconcurrency import WebKit
 
 struct SSOWebView: View {
     let url: URL
