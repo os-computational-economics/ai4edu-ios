@@ -105,246 +105,6 @@ struct DashboardView: View {
     }
 }
 
-struct SidebarView: View {
-    @EnvironmentObject private var appState: AppState
-    @State private var showTokens: Bool
-    @State private var workspaceRoles: [String: String] = [:]
-    
-    init(showTokens: Bool = false) {
-        self._showTokens = State(initialValue: showTokens)
-    }
-    
-    var body: some View {
-        List {
-            
-            if !workspaceRoles.isEmpty {
-                Section(header: Text("YOUR WORKSPACES")) {
-                    ForEach(workspaceRoles.keys.sorted(), id: \.self) { workspaceId in
-                        if let role = workspaceRoles[workspaceId] {
-                            let isCurrentWorkspace = appState.currentWorkspace?.id == workspaceId
-                            
-                            Button(action: {
-                                selectWorkspace(id: workspaceId, role: role)
-                            }) {
-                                HStack {
-                                    Text(formatWorkspaceName(workspaceId))
-                                        .fontWeight(isCurrentWorkspace ? .bold : .regular)
-                                    
-                                    Spacer()
-                                    
-                                    Text(role.capitalized)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(roleColor(for: role))
-                                        .cornerRadius(4)
-                                }
-                            }
-                            .foregroundColor(.primary)
-                            .background(isCurrentWorkspace ? Color.accentColor.opacity(0.1) : Color.clear)
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-            }
-            
-            if let workspace = appState.currentWorkspace, !workspace.id.isEmpty {
-                Section(header: Text("CURRENT: \(workspace.name)")) {
-                    NavigationLink(
-                        destination: AgentsView(),
-                        tag: AppTab.agents,
-                        selection: $appState.currentTab
-                    ) {
-                        Label("Agents", systemImage: "person.text.rectangle")
-                    }
-                    
-                    if workspace.role == "teacher" || workspace.role == "admin" {
-                        NavigationLink(
-                            destination: RosterView(),
-                            tag: AppTab.roster,
-                            selection: $appState.currentTab
-                        ) {
-                            Label("Roster", systemImage: "person.3")
-                        }
-                    }
-                    
-                    NavigationLink(
-                        destination: ThreadHistoryView(),
-                        tag: AppTab.chatHistory,
-                        selection: $appState.currentTab
-                    ) {
-                        Label("Chat History", systemImage: "bubble.left.and.bubble.right")
-                    }
-                
-                }
-            }
-            
-            Section(header: Text("SETTINGS")) {
-                Button(action: {
-                    appState.logout()
-                }) {
-                    Label("Logout", systemImage: "arrow.right.square")
-                        .foregroundColor(.red)
-                }
-                
-                Button(action: {
-                    showTokens.toggle()
-                }) {
-                    HStack {
-                        Label("Show Tokens", systemImage: "key.fill")
-                        Spacer()
-                        Image(systemName: showTokens ? "chevron.up" : "chevron.down")
-                    }
-                }
-                
-                if showTokens {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Token Information:")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .padding(.top, 5)
-                        
-                        if let jwtData = TokenManager.shared.decodeToken() {
-                            VStack(alignment: .leading) {
-                                Text(jwtData.formattedString())
-                                    .font(.system(.caption, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color(UIColor.systemGray6))
-                                    .cornerRadius(4)
-                                
-                                if !jwtData.workspaceRoles.isEmpty {
-                                    Divider()
-                                        .padding(.vertical, 5)
-                                    
-                                    Text("Workspace Roles:")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        ForEach(jwtData.workspaceRoles.sorted(by: { $0.key < $1.key }), id: \.key) { workspace, role in
-                                            HStack {
-                                                Text(workspace)
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundColor(.primary)
-                                                Spacer()
-                                                Text(role.capitalized)
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundColor(.blue)
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(Color.blue.opacity(0.1))
-                                                    .cornerRadius(4)
-                                            }
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 2)
-                                        }
-                                    }
-                                    .padding(8)
-                                    .background(Color(UIColor.systemGray6))
-                                    .cornerRadius(4)
-                                }
-                            }
-                        } else {
-                            Text("Unable to decode token")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-                        
-                        Divider()
-                            .padding(.vertical, 5)
-                        
-                        Text("Access Token (Raw):")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                        
-                        if let accessToken = TokenManager.shared.getAccessToken() {
-                            ScrollView {
-                                Text(accessToken)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color(UIColor.systemGray6))
-                                    .cornerRadius(4)
-                                    .textSelection(.enabled)
-                            }
-                            .frame(maxHeight: 100)
-                        } else {
-                            Text("No access token")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                        
-                        Text("Refresh Token (Raw):")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .padding(.top, 5)
-                        
-                        if let refreshToken = TokenManager.shared.getRefreshToken() {
-                            ScrollView {
-                                Text(refreshToken)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color(UIColor.systemGray6))
-                                    .cornerRadius(4)
-                                    .textSelection(.enabled)
-                            }
-                            .frame(maxHeight: 100)
-                        } else {
-                            Text("No refresh token")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .padding(.top, 8)
-                }
-            }
-        }
-        .listStyle(SidebarListStyle())
-        .frame(minWidth: 200)
-        .onAppear {
-            workspaceRoles = TokenManager.shared.getWorkspaceRoles()
-        }
-    }
-    
-    private func selectWorkspace(id: String, role: String) {
-        let courseName = formatWorkspaceName(id)
-        let course = Course(id: id, role: role, name: courseName)
-        
-        CourseManager.shared.saveSelectedCourse(course)
-        appState.currentWorkspace = course
-
-    }
-    
-    private func formatWorkspaceName(_ id: String) -> String {
-        let courses = CourseManager.shared.getCourses()
-        if let existingCourse = courses.first(where: { $0.id == id }) {
-            return existingCourse.name
-        }
-        
-        let parts = id.components(separatedBy: ".")
-        if parts.count >= 2 {
-            let courseCode = parts[0]
-            let term = parts[1]
-            return "\(courseCode) (\(term))"
-        }
-        
-        return id
-    }
-    
-    private func roleColor(for role: String) -> Color {
-        switch role.lowercased() {
-        case "admin":
-            return .red
-        case "teacher", "instructor":
-            return .orange
-        case "student":
-            return .blue
-        default:
-            return .gray
-        }
-    }
-}
-
 struct AgentsView: View {
     @EnvironmentObject private var appState: AppState
     @State private var agents: [Agent] = []
@@ -400,7 +160,7 @@ struct AgentsView: View {
             loadAgentsIfNeeded()
             setupTabBarNotifications()
         }
-        .onChange(of: appState.currentWorkspace?.id) { newId in
+        .onChange(of: appState.currentWorkspace?.id) { oldId, newId in
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 resetAndReload()
@@ -613,7 +373,7 @@ struct AgentsView: View {
         
         let baseURL = "https://ai4edu-api.jerryang.org/v1/prod"
         let endpoint = "/admin/agents/agents"
-        let debugURL = "\(baseURL)\(endpoint)?page=\(currentPage)&page_size=10&workspace_id=\(formattedWorkspaceId)"
+        _ = "\(baseURL)\(endpoint)?page=\(currentPage)&page_size=10&workspace_id=\(formattedWorkspaceId)"
         
         
         APIService.shared.fetchAgents(
@@ -950,7 +710,7 @@ struct RosterView: View {
         .onAppear {
             loadUsersIfNeeded()
         }
-        .onChange(of: appState.currentWorkspace?.id) { newId in
+        .onChange(of: appState.currentWorkspace?.id) { oldId, newId in
             if let newWorkspaceId = newId, newWorkspaceId != currentWorkspaceId {
                 currentWorkspaceId = newWorkspaceId
                 resetAndReload()
