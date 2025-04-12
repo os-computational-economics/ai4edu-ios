@@ -4,7 +4,14 @@
 Final project for **CSDS 392 – App Development for iOS**  
 **Team Members:** Ruilin Jin, Teddy Bryant
 
-[AI4EDU](https://dashboard.ai4edu.io/) is an application designed to provide AI-powered educational assistance through interactive chat and customizable agent interactions. This project focuses on building the iOS version of the platform.
+[AI4EDU](https://dashboard.ai4edu.io/) is an application designed to provide AI-powered educational assistance through interactive chat and customizable agent interactions. This project focuses on developing the iOS version, which offers basic chat functionality for students.
+
+**IMPORTANT :** 
+
+To create a new workspace, please contact system admin or Professor Sining Wang at `sxw924@case.edu`. 
+
+
+To create or modify an agent, use the web-based version of the platform at the link above.
 
 ---
 
