@@ -79,11 +79,6 @@ class APIService {
     
     // MARK: - Token Management
     
-    /// Refreshes the access token using the refresh token
-    /// 
-    /// This function calls the /admin/ping endpoint with the refresh token
-    /// to get a new access token. If successful, it saves the new access token.
-    /// - Parameter completion: Callback with success or failure result
     func ping(completion: @escaping (Result<Bool, Error>) -> Void) {
         let endpoint = "/admin/ping"
         
@@ -131,14 +126,7 @@ class APIService {
         }.resume()
     }
     
-    /// Checks for token validity and refreshes if needed
-    /// 
-    /// This function checks if an access token exists. If not, it tries to use
-    /// the refresh token to get a new access token. If both tokens are missing,
-    /// it triggers the logout process via a notification.
-    /// - Parameter completion: Callback with success or failure result
     func checkToken(completion: @escaping (Result<Bool, Error>) -> Void) {
-        // Check if there is no access token but there is a refresh token
         if TokenManager.shared.getAccessToken() == nil && TokenManager.shared.getRefreshToken() != nil {
             ping { result in
                 switch result {
@@ -149,14 +137,11 @@ class APIService {
                 }
             }
         } else if TokenManager.shared.getAccessToken() == nil && TokenManager.shared.getRefreshToken() == nil {
-            // No tokens available, need to log out
             DispatchQueue.main.async {
-                // We'll have to post a notification and handle logout in the UI
                 NotificationCenter.default.post(name: Notification.Name("LogoutRequired"), object: nil)
             }
             completion(.failure(APIError.networkError))
         } else {
-            // Access token exists, proceed
             completion(.success(true))
         }
     }
