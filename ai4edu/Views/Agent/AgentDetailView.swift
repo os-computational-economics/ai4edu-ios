@@ -81,7 +81,6 @@ extension View {
 struct AgentDetailView: View {
     let agent: Agent
     var initialThreadId: String? = nil
-    var fullScreenMode: Bool = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var appState: AppState
     
@@ -161,41 +160,39 @@ struct AgentDetailView: View {
                     }
                     
                     Spacer()
-
                 }
                 
-                if !fullScreenMode {
-                    HStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    TabButton(
+                        title: "Chat",
+                        systemImage: "bubble.left.and.bubble.right",
+                        isSelected: selectedTab == .chat,
+                        isEnabled: agent.status == 1,
+                        action: { selectedTab = .chat }
+                    )
+                    
+                    if !isStudent {
                         TabButton(
-                            title: "Chat",
-                            systemImage: "bubble.left.and.bubble.right",
-                            isSelected: selectedTab == .chat,
-                            isEnabled: agent.status == 1,
-                            action: { selectedTab = .chat }
+                            title: "Details",
+                            systemImage: "info.circle",
+                            isSelected: selectedTab == .details,
+                            action: { selectedTab = .details }
                         )
-                        
-                        if !isStudent {
-                            TabButton(
-                                title: "Details",
-                                systemImage: "info.circle",
-                                isSelected: selectedTab == .details,
-                                action: { selectedTab = .details }
-                            )
-                        }
-                        
-                        if !agent.agentFiles.isEmpty {
-                            TabButton(
-                                title: "Files",
-                                systemImage: "doc.on.doc",
-                                isSelected: selectedTab == .files,
-                                action: { selectedTab = .files }
-                            )
-                        }
-                        
-                        Spacer()
                     }
-                    .padding(.top, 8)
+    
+                    
+                    if !agent.agentFiles.isEmpty {
+                        TabButton(
+                            title: "Files",
+                            systemImage: "doc.on.doc",
+                            isSelected: selectedTab == .files,
+                            action: { selectedTab = .files }
+                        )
+                    }
+                    
+                    Spacer()
                 }
+                .padding(.top, 8)
             }
             .padding()
             .background(Color(UIColor.systemBackground))
@@ -204,29 +201,24 @@ struct AgentDetailView: View {
                 alignment: .bottom
             )
             
-            // In full screen mode, always show chat view
-            if fullScreenMode {
+            TabView(selection: $selectedTab) {
                 chatView
-            } else {
-                TabView(selection: $selectedTab) {
-                    chatView
-                        .tag(DetailTab.chat)
-                    
-                    if !isStudent {
-                        agentDetailsView
-                            .tag(DetailTab.details)
-                        
-                        if !agent.agentFiles.isEmpty {
-                            filesView
-                                .tag(DetailTab.files)
-                        }
-                    }
+                    .tag(DetailTab.chat)
+                
+                if !isStudent {
+                    agentDetailsView
+                        .tag(DetailTab.details)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
+                
+                if !agent.agentFiles.isEmpty {
+                    filesView
+                        .tag(DetailTab.files)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .edgesIgnoringSafeArea(.bottom)
-        .navigationTitle(fullScreenMode ? "" : "Agent Details")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -235,17 +227,16 @@ struct AgentDetailView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            if fullScreenMode {
-                NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
-                
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithTransparentBackground()
-                appearance.backgroundColor = .clear
-                appearance.shadowColor = .clear
-                UINavigationBar.appearance().standardAppearance = appearance
-                UINavigationBar.appearance().compactAppearance = appearance
-                UINavigationBar.appearance().scrollEdgeAppearance = appearance
-            }
+            NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
+            
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = .clear
+            appearance.shadowColor = .clear
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().compactAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            
             if !hasInitialized {
                 hasInitialized = true
                 
@@ -261,19 +252,17 @@ struct AgentDetailView: View {
             }
         }
         .onDisappear {
-            if fullScreenMode {
-                NotificationCenter.default.post(name: NSNotification.Name("ShowTabBar"), object: nil)
-                
-                // Reset navigation bar appearance
-                let standardAppearance = UINavigationBarAppearance()
-                standardAppearance.configureWithDefaultBackground()
-                UINavigationBar.appearance().standardAppearance = standardAppearance
-                UINavigationBar.appearance().compactAppearance = standardAppearance
-                UINavigationBar.appearance().scrollEdgeAppearance = standardAppearance
-            }
+            NotificationCenter.default.post(name: NSNotification.Name("ShowTabBar"), object: nil)
+            
+            // Reset navigation bar appearance
+            let standardAppearance = UINavigationBarAppearance()
+            standardAppearance.configureWithDefaultBackground()
+            UINavigationBar.appearance().standardAppearance = standardAppearance
+            UINavigationBar.appearance().compactAppearance = standardAppearance
+            UINavigationBar.appearance().scrollEdgeAppearance = standardAppearance
         }
         .background(Color(UIColor.secondarySystemBackground))
-        .statusBar(hidden: fullScreenMode)
+        .statusBar(hidden: true)
     }
     
     // MARK: - Tab Views

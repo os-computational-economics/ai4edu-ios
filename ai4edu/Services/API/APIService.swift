@@ -110,13 +110,6 @@ class APIService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                
-                httpResponse.allHeaderFields.forEach { key, value in
-                    print("📱 AGENTS-API -   \(key): \(value)")
-                }
-            }
-            
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return

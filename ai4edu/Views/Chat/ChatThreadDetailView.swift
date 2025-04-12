@@ -182,7 +182,7 @@ struct ChatThreadDetailView: View {
             NavigationLink(
                 destination: Group {
                     if let agent = agentForContinue {
-                        AgentDetailView(agent: agent, initialThreadId: thread.threadId, fullScreenMode: true)
+                        AgentDetailView(agent: agent, initialThreadId: thread.threadId)
                     }
                 },
                 isActive: $navigateToContinueChat
