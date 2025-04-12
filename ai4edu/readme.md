@@ -25,12 +25,12 @@ Final project for **CSDS 392 – App Development for iOS**
 
 ## Features
 
-- 🔐 User authentication via SSO
-- 💬 AI chat interface for real-time interaction
-- 🤖 Custom AI agent management
-- 📄 Markdown support for rich content rendering
-- 🧵 Persistent thread and conversation history
-- 📚 Course-specific educational tools and resources
+- User authentication via SSO
+- AI chat interface for real-time interaction
+- Custom AI agent management
+- Code and Markdown support for rich content rendering
+- Persistent thread and conversation history
+- Course-specific educational tools and resources
 
 ---
 

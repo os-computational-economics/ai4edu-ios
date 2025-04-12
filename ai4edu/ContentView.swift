@@ -35,15 +35,6 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.3), value: appState.isLoggedIn)
         .onAppear {
             appState.checkLoginStatus()
-            
-            // Add observer for LogoutRequired notification
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("LogoutRequired"),
-                object: nil,
-                queue: .main
-            ) { _ in
-                appState.logout()
-            }
         }
     }
 }
