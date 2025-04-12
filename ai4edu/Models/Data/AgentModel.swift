@@ -31,10 +31,10 @@ struct Agent: Identifiable, Codable {
     let model: String
     let agentFiles: [String: String]
     let status: Int  // 1 = Active, 0 = Disabled
-    let createdAt: String
+    let createdAt: String?
     let creator: String
-    let updatedAt: String
-    let systemPrompt: String
+    let updatedAt: String?
+    let systemPrompt: String?
     
     var id: String { agentId }
     
@@ -50,6 +50,49 @@ struct Agent: Identifiable, Codable {
         case creator
         case updatedAt = "updated_at"
         case systemPrompt = "system_prompt"
+    }
+    
+    // Add initializer with default values for optional fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Required fields
+        agentId = try container.decode(String.self, forKey: .agentId)
+        agentName = try container.decode(String.self, forKey: .agentName)
+        workspaceId = try container.decode(String.self, forKey: .workspaceId)
+        voice = try container.decode(Bool.self, forKey: .voice)
+        allowModelChoice = try container.decode(Bool.self, forKey: .allowModelChoice)
+        model = try container.decode(String.self, forKey: .model)
+        status = try container.decode(Int.self, forKey: .status)
+        
+        // Optional fields
+        agentFiles = try container.decodeIfPresent([String: String].self, forKey: .agentFiles) ?? [:]
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        creator = try container.decodeIfPresent(String.self, forKey: .creator) ?? ""
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt)
+        
+        // Debug
+        print("📱 AGENT-MODEL - Decoded agentFiles: \(agentFiles)")
+    }
+    
+    // Add regular initializer for mock data
+    init(agentId: String, agentName: String, workspaceId: String, voice: Bool, 
+         allowModelChoice: Bool, model: String, agentFiles: [String: String], 
+         status: Int, createdAt: String?, creator: String, updatedAt: String?, 
+         systemPrompt: String?) {
+        self.agentId = agentId
+        self.agentName = agentName
+        self.workspaceId = workspaceId
+        self.voice = voice
+        self.allowModelChoice = allowModelChoice
+        self.model = model
+        self.agentFiles = agentFiles
+        self.status = status
+        self.createdAt = createdAt
+        self.creator = creator
+        self.updatedAt = updatedAt
+        self.systemPrompt = systemPrompt
     }
 }
 

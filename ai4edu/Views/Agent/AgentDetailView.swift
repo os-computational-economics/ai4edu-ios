@@ -171,24 +171,19 @@ struct AgentDetailView: View {
                         action: { selectedTab = .chat }
                     )
                     
-                    if !isStudent {
-                        TabButton(
-                            title: "Details",
-                            systemImage: "info.circle",
-                            isSelected: selectedTab == .details,
-                            action: { selectedTab = .details }
-                        )
-                    }
-    
+                    TabButton(
+                        title: "Details",
+                        systemImage: "info.circle",
+                        isSelected: selectedTab == .details,
+                        action: { selectedTab = .details }
+                    )
                     
-                    if !agent.agentFiles.isEmpty {
-                        TabButton(
-                            title: "Files",
-                            systemImage: "doc.on.doc",
-                            isSelected: selectedTab == .files,
-                            action: { selectedTab = .files }
-                        )
-                    }
+                    TabButton(
+                        title: "Files",
+                        systemImage: "doc.on.doc",
+                        isSelected: selectedTab == .files,
+                        action: { selectedTab = .files }
+                    )
                     
                     Spacer()
                 }
@@ -205,15 +200,11 @@ struct AgentDetailView: View {
                 chatView
                     .tag(DetailTab.chat)
                 
-                if !isStudent {
-                    agentDetailsView
-                        .tag(DetailTab.details)
-                }
+                agentDetailsView
+                    .tag(DetailTab.details)
                 
-                if !agent.agentFiles.isEmpty {
-                    filesView
-                        .tag(DetailTab.files)
-                }
+                filesView
+                    .tag(DetailTab.files)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
@@ -236,6 +227,10 @@ struct AgentDetailView: View {
             UINavigationBar.appearance().standardAppearance = appearance
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            
+            // Debug print agent files
+            print("📱 AGENT-DETAIL - Agent files: \(agent.agentFiles)")
+            print("📱 AGENT-DETAIL - Agent files count: \(agent.agentFiles.count)")
             
             if !hasInitialized {
                 hasInitialized = true
@@ -482,8 +477,8 @@ struct AgentDetailView: View {
                 
                 detailCard(title: "Timestamps") {
                     VStack(alignment: .leading, spacing: 12) {
-                        detailRow(title: "Created", value: formatDate(agent.createdAt, includeTime: true))
-                        detailRow(title: "Last Updated", value: formatDate(agent.updatedAt, includeTime: true))
+                        detailRow(title: "Created", value: agent.createdAt != nil ? formatDate(agent.createdAt!, includeTime: true) : "Not available")
+                        detailRow(title: "Last Updated", value: agent.updatedAt != nil ? formatDate(agent.updatedAt!, includeTime: true) : "Not available")
                     }
                 }
                 
@@ -522,37 +517,61 @@ struct AgentDetailView: View {
     private var filesView: some View {
         ScrollView {
             VStack(spacing: 16) {
-                ForEach(Array(agent.agentFiles), id: \.key) { fileId, fileName in
-                    VStack(alignment: .leading) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(fileName)
-                                    .font(.headline)
-                                
-                                Text("File ID: \(fileId)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            // File icon based on extension
-                            Image(systemName: getFileIcon(for: fileName))
-                                .font(.system(size: 30))
-                                .foregroundColor(.blue)
-                                .frame(width: 50, height: 50)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
-                        }
+                if agent.agentFiles.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "doc.slash")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray.opacity(0.7))
+                            .padding(.top, 40)
                         
-//                        Divider()
-//                            .padding(.top, 8)
+                        Text("No Files Available")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("This agent doesn't have any attached files.")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 40)
                     }
-                    .padding()
-                    .background(Color(UIColor.systemBackground))
-                    .cornerRadius(12)
-                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(.vertical, 40)
+                } else {
+                    // Debug info
+                    Text("Files count: \(agent.agentFiles.count)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    ForEach(Array(agent.agentFiles), id: \.key) { fileId, fileName in
+                        VStack(alignment: .leading) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(fileName)
+                                        .font(.headline)
+                                    
+                                    Text("File ID: \(fileId)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                // File icon based on extension
+                                Image(systemName: getFileIcon(for: fileName))
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.blue)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                        .padding(.horizontal)
+                    }
                 }
             }
             .padding(.vertical)

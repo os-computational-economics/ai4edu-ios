@@ -80,6 +80,7 @@ class APIService {
     
     func fetchAgents(page: Int, pageSize: Int, workspaceId: String, completion: @escaping (Result<AgentsListResponse, Error>) -> Void) {
         let endpoint = "/admin/agents/agents"
+        print("##### called")
         
         var urlComponents = URLComponents(string: baseURL + endpoint)
         urlComponents?.queryItems = [

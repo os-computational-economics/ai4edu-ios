@@ -744,13 +744,10 @@ class ChatService {
             return
         }
         
-        guard let accessToken = UserDefaults.standard.string(forKey: "accessToken") else {
-            completion(.failure(NSError(domain: "ChatService", code: 401, userInfo: [NSLocalizedDescriptionKey: "No access token available"])))
-            return
-        }
-        
-        let endpoint = "/agents/get_agent/\(agentId)"
+        let endpoint = "/admin/agents/agent/\(agentId)"
         let apiUrl = baseURL + endpoint
+        
+        print("📱 AGENT-API - Requesting agent details from: \(apiUrl)")
         
         guard let url = URL(string: apiUrl) else {
             completion(.failure(NSError(domain: "ChatService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
@@ -759,27 +756,54 @@ class ChatService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        
+        if let accessToken = getAccessToken() {
+            request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
+        } else {
+            print("📱 AGENT-API - WARNING: No access token available for authorization")
+        }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("📱 AGENT-API - Error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📱 AGENT-API - HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
             guard let data = data else {
+                print("📱 AGENT-API - No data received from server")
                 completion(.failure(NSError(domain: "ChatService", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
                 return
             }
             
+            // Log the full response
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📱 AGENT-API - Full Response: \(jsonString)")
+            }
+            
             do {
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("📱 AGENT-API - Response: \(jsonString.prefix(200))...")
-                }
-                
                 let agentResponse = try JSONDecoder().decode(SingleAgentResponse.self, from: data)
+                
+                // Debug - print agent files information
+                print("📱 AGENT-API - Decoded agent files: \(agentResponse.data.agentFiles)")
+                print("📱 AGENT-API - Files count: \(agentResponse.data.agentFiles.count)")
+                
                 completion(.success(agentResponse.data))
             } catch {
+                print("📱 AGENT-API - Decoding error: \(error)")
+                
+                // Additional debug - try to parse manually to see files
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let data = json["data"] as? [String: Any],
+                   let files = data["agent_files"] as? [String: String] {
+                    print("📱 AGENT-API - Manual parse of files: \(files)")
+                    print("📱 AGENT-API - Manual files count: \(files.count)")
+                }
+                
                 completion(.failure(error))
             }
         }.resume()
@@ -871,4 +895,8 @@ struct SingleAgentResponse: Codable {
     let data: Agent
     let message: String
     let success: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case data, message, success
+    }
 }

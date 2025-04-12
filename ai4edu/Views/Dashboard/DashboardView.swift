@@ -427,6 +427,10 @@ struct AgentCard: View {
     let agent: Agent
     let role: String
     @State private var navigateToAgentDetail: Bool = false
+    @State private var detailedAgent: Agent?
+    @State private var isLoadingAgentDetails: Bool = false
+    @State private var showError: Bool = false
+    @State private var errorMessage: String = ""
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -450,10 +454,16 @@ struct AgentCard: View {
             
             HStack(spacing: 12) {
                 Button(action: {
-                    navigateToAgentDetail = true
+                    fetchAgentDetailsAndNavigate()
                 }) {
                     HStack {
-                        Image(systemName: "message.fill")
+                        if isLoadingAgentDetails {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "message.fill")
+                        }
                         Text("Chat")
                     }
                     .padding(.horizontal, 8)
@@ -463,6 +473,7 @@ struct AgentCard: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
                 }
+                .disabled(isLoadingAgentDetails)
                 
                 if role != "student" {
                     Button(action: {
@@ -514,12 +525,48 @@ struct AgentCard: View {
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
         .background(
             NavigationLink(
-                destination: AgentDetailView(agent: agent)
-                    .navigationBarHidden(true),
+                destination: detailedAgent != nil ? 
+                    AgentDetailView(agent: detailedAgent ?? agent)
+                        .navigationBarHidden(true) : nil,
                 isActive: $navigateToAgentDetail
             ) {
                 EmptyView()
             }
         )
+        .alert(isPresented: $showError) {
+            Alert(
+                title: Text("Error"),
+                message: Text(errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+    
+    private func fetchAgentDetailsAndNavigate() {
+        isLoadingAgentDetails = true
+        
+        ChatService.shared.getAgentDetails(agentId: agent.agentId) { result in
+            DispatchQueue.main.async {
+                isLoadingAgentDetails = false
+                
+                switch result {
+                case .success(let detailedAgent):
+                    print("📱 AGENT-CARD - Detailed agent files: \(detailedAgent.agentFiles)")
+                    print("📱 AGENT-CARD - Files count: \(detailedAgent.agentFiles.count)")
+                    print("📱 AGENT-CARD - Original agent: \(self.agent.agentName)")
+                    print("📱 AGENT-CARD - Detailed agent: \(detailedAgent.agentName)")
+                    
+                    self.detailedAgent = detailedAgent
+                    self.navigateToAgentDetail = true
+                case .failure(let error):
+                    print("📱 AGENT-CARD - Failed to get agent details: \(error.localizedDescription)")
+                    self.errorMessage = "Failed to load agent details: \(error.localizedDescription)"
+                    self.showError = true
+                    // Fall back to the basic agent info if details can't be loaded
+                    self.detailedAgent = self.agent
+                    self.navigateToAgentDetail = true
+                }
+            }
+        }
     }
 }
