@@ -10,71 +10,31 @@ import Combine
 import Foundation
 import UIKit
 
-struct KeyboardToolbar: UIViewRepresentable {
-    let doneAction: () -> Void
-    
-    func makeUIView(context: Context) -> UIToolbar {
-        let toolbar = UIToolbar(frame: .init(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
-        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: context.coordinator, action: #selector(Coordinator.doneButtonTapped))
-        
-        toolbar.items = [flexSpace, doneButton]
-        toolbar.sizeToFit()
-        
-        return toolbar
-    }
-    
-    func updateUIView(_ uiView: UIToolbar, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject {
-        let parent: KeyboardToolbar
-        
-        init(_ parent: KeyboardToolbar) {
-            self.parent = parent
-        }
-        
-        @objc func doneButtonTapped() {
-            parent.doneAction()
-        }
+// MARK: - Keyboard Handling
+
+extension View {
+    func keyboardAdaptive() -> some View {
+        ModifiedContent(content: self, modifier: KeyboardAdaptive())
     }
 }
 
-// MARK: - Keyboard Avoiding Modifier
-struct KeyboardAvoiding: ViewModifier {
+struct KeyboardAdaptive: ViewModifier {
     @State private var keyboardHeight: CGFloat = 0
-    
+
     func body(content: Content) -> some View {
         content
             .padding(.bottom, keyboardHeight)
-            .animation(.easeOut(duration: 0.16), value: keyboardHeight)
             .onAppear {
                 NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
-                    let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? .zero
-                    let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
-                    
-                    withAnimation(.easeOut(duration: animationDuration)) {
-                        self.keyboardHeight = keyboardFrame.height
+                    if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                        self.keyboardHeight = keyboardFrame.height - 32
                     }
                 }
                 
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { notification in
-                    let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
-                    
-                    withAnimation(.easeOut(duration: animationDuration)) {
-                        self.keyboardHeight = 0
-                    }
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
+                    self.keyboardHeight = 0
                 }
             }
-    }
-}
-
-extension View {
-    func avoidKeyboard() -> some View {
-        self.modifier(KeyboardAvoiding())
     }
 }
 
@@ -261,169 +221,119 @@ struct AgentDetailView: View {
     private var chatView: some View {
         Group {
             if agent.status == 1 {
-                VStack(spacing: 0) {
-                    ScrollViewReader { scrollProxy in
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                if isLoading && messages.isEmpty {
-                                    VStack {
-                                        ProgressView("Loading messages...")
-                                            .padding(.top, 40)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                } else if messages.isEmpty {
-                                    VStack(spacing: 20) {
-                                        Image(systemName: "bubble.left.and.bubble.right")
-                                            .font(.system(size: 50))
-                                            .foregroundColor(.gray.opacity(0.5))
-                                            .padding(.top, 60)
-                                        
-                                        Text("Start a conversation with \(agent.agentName)")
-                                            .font(.headline)
-                                            .multilineTextAlignment(.center)
-                                            .foregroundColor(.secondary)
-                                            .padding(.horizontal)
-                                        
-                                        Text("Ask a question to begin chatting with this agent")
-                                            .font(.subheadline)
-                                            .multilineTextAlignment(.center)
-                                            .foregroundColor(.secondary)
-                                            .padding(.horizontal)
-                                        
-                                        Spacer()
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal)
-                                } else {
-                                    ForEach(messages) { message in
-                                        ChatBubble(message: message, agentName: agent.agentName)
-                                            .padding(.horizontal)
-                                            .id("\(message.id)-\(message.text.hashValue)")
-                                    }
-                                    
-                                    if isLoading {
-                                        HStack {
+                ZStack(alignment: .bottom) {
+                    VStack(spacing: 0) {
+                        ScrollViewReader { scrollProxy in
+                            ScrollView {
+                                LazyVStack(spacing: 16) {
+                                    if isLoading && messages.isEmpty {
+                                        VStack {
+                                            ProgressView("Loading messages...")
+                                                .padding(.top, 40)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    } else if messages.isEmpty {
+                                        VStack(spacing: 20) {
+                                            Image(systemName: "bubble.left.and.bubble.right")
+                                                .font(.system(size: 50))
+                                                .foregroundColor(.gray.opacity(0.5))
+                                                .padding(.top, 60)
+                                            
+                                            Text("Start a conversation with \(agent.agentName)")
+                                                .font(.headline)
+                                                .multilineTextAlignment(.center)
+                                                .foregroundColor(.secondary)
+                                                .padding(.horizontal)
+                                            
+                                            Text("Ask a question to begin chatting with this agent")
+                                                .font(.subheadline)
+                                                .multilineTextAlignment(.center)
+                                                .foregroundColor(.secondary)
+                                                .padding(.horizontal)
+                                            
                                             Spacer()
-                                            ProgressView()
-                                                .padding()
-                                            Spacer()
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.horizontal)
+                                    } else {
+                                        ForEach(messages) { message in
+                                            ChatBubble(message: message, agentName: agent.agentName)
+                                                .padding(.horizontal)
+                                                .id("\(message.id)-\(message.text.hashValue)")
+                                        }
+                                        
+                                        if isLoading {
+                                            HStack {
+                                                Spacer()
+                                                ProgressView()
+                                                    .padding()
+                                                Spacer()
+                                            }
                                         }
                                     }
                                     
                                     Rectangle()
                                         .fill(Color.clear)
-                                        .frame(height: 1)
+                                        .frame(height: 80)  // Extra space for input area
                                         .id("bottom")
                                 }
+                                .padding(.top)
                             }
-                            .padding(.top)
-                        }
-                        .simultaneousGesture(
-                            DragGesture().onChanged { _ in
-                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                              to: nil, 
-                                                              from: nil, 
-                                                              for: nil)
-                            }
-                        )
-                        .gesture(
-                            TapGesture()
-                                .onEnded { _ in
-                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                                 to: nil, 
-                                                                 from: nil, 
-                                                                 for: nil)
+                            .onChange(of: messages.count) {
+                                withAnimation {
+                                    scrollProxy.scrollTo("bottom", anchor: .bottom)
                                 }
-                        )
-                        .onChange(of: messages.count) {
-                            withAnimation {
-                                scrollProxy.scrollTo("bottom", anchor: .bottom)
                             }
-                        }
-                        .onChange(of: isLoading) {
-                            withAnimation {
-                                scrollProxy.scrollTo("bottom", anchor: .bottom)
+                            .onChange(of: isLoading) {
+                                withAnimation {
+                                    scrollProxy.scrollTo("bottom", anchor: .bottom)
+                                }
                             }
-                        }
-                        .onChange(of: messageUpdateCounter) {
-                            withAnimation {
-                                scrollProxy.scrollTo("bottom", anchor: .bottom)
+                            .onChange(of: messageUpdateCounter) {
+                                withAnimation {
+                                    scrollProxy.scrollTo("bottom", anchor: .bottom)
+                                }
                             }
-                        }
-                        .onChange(of: streamObserver.lastUpdatedId) {
-                            withAnimation {
-                                scrollProxy.scrollTo("bottom", anchor: .bottom)
-                            }
-                        }
-                        .onChange(of: messageText) {
-                            if !messages.isEmpty {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    withAnimation {
-                                        scrollProxy.scrollTo("bottom", anchor: .bottom)
-                                    }
+                            .onChange(of: streamObserver.lastUpdatedId) {
+                                withAnimation {
+                                    scrollProxy.scrollTo("bottom", anchor: .bottom)
                                 }
                             }
                         }
                     }
                     
-                    // Enhanced input area
-                    HStack(spacing: 12) {
-                        ZStack(alignment: .leading) {
-                            // Placeholder text
-                            if messageText.isEmpty {
-                                Text("Type your message...")
-                                    .foregroundColor(Color.gray.opacity(0.8))
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 8)
-                            }
-                            
-                            TextEditor(text: $messageText)
-                                .padding(.horizontal, 1)
-                                .frame(minHeight: 20, maxHeight: 120)
+                    VStack(spacing: 0) {
+                        Divider()
+                        HStack {
+                            TextField("Type your message...", text: $messageText)
+                                .padding(10)
+                                .background(Color(UIColor.systemGray6))
                                 .cornerRadius(20)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .opacity(messageText.isEmpty ? 0.7 : 1)
-                                .background(
-                                    KeyboardToolbar {
-                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                                      to: nil, 
-                                                                      from: nil, 
-                                                                      for: nil)
+                                .submitLabel(.send)
+                                .onSubmit {
+                                    if !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        sendMessage()
                                     }
-                                    .frame(width: 0, height: 0)
-                                )
-                        }
-                        .padding(8)
-                        .background(Color(UIColor.systemBackground))
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        
-                        Button(action: sendMessage) {
-                            ZStack {
-                                Circle()
-                                    .fill(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading ? 
-                                          Color.blue.opacity(0.3) : Color.blue)
-                                    .frame(width: 44, height: 44)
-                                
-                                Image(systemName: "arrow.up")
-                                    .font(.system(size: 20, weight: .semibold))
+                                }
+                            
+                            Button(action: sendMessage) {
+                                Image(systemName: "paperplane.fill")
                                     .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading ? 
+                                              Color.blue.opacity(0.3) : Color.blue)
+                                    .clipShape(Circle())
                             }
+                            .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
                         }
-                        .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                        .padding(.horizontal)
+                        .padding(.vertical, 10)
+                        .background(Color(UIColor.systemBackground))
                     }
-                    .padding([.horizontal, .bottom], 16)
-                    .padding(.top, 8)
                     .background(Color(UIColor.systemBackground))
-                    .overlay(
-                        Divider(),
-                        alignment: .top
-                    )
+                    .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: -1)
                 }
-                .avoidKeyboard()
+                .keyboardAdaptive()
             } else {
                 // Agent is disabled
                 VStack(spacing: 20) {
@@ -638,7 +548,7 @@ struct AgentDetailView: View {
                     self.currentThreadId = threadId
                     self.sendMessageToThread(userMessageText, threadId: threadId)
                     
-                case .failure(let error):
+                case .failure(_):
                     DispatchQueue.main.async {
                         self.isLoading = false
                         

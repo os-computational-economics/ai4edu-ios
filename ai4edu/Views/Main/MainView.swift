@@ -19,7 +19,7 @@ struct MainView: View {
     @State private var hideTabBar: Bool = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 if appState.currentWorkspace != nil && !appState.currentWorkspace!.id.isEmpty {
                     VStack(spacing: 0) {
@@ -254,21 +254,13 @@ struct MainView: View {
                     }
                 }
             }
-            .background(
-                NavigationLink(
-                    destination: Group {
-                        if let agent = agentForContinue, let threadId = threadIdForContinue {
-                            AgentDetailView(agent: agent, initialThreadId: threadId)
-                                .navigationBarHidden(true)
-                        }
-                    },
-                    isActive: $navigateToAgentDetail
-                ) {
-                    EmptyView()
+            .navigationDestination(isPresented: $navigateToAgentDetail) {
+                if let agent = agentForContinue, let threadId = threadIdForContinue {
+                    AgentDetailView(agent: agent, initialThreadId: threadId)
+                        .navigationBarHidden(true)
                 }
-            )
+            }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
         .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         .onAppear {
             workspaceRoles = TokenManager.shared.getWorkspaceRoles()

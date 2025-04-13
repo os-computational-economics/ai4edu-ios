@@ -178,17 +178,6 @@ struct ChatThreadDetailView: View {
                     }
                 }
             }
-            
-            NavigationLink(
-                destination: Group {
-                    if let agent = agentForContinue {
-                        AgentDetailView(agent: agent, initialThreadId: thread.threadId)
-                    }
-                },
-                isActive: $navigateToContinueChat
-            ) {
-                EmptyView()
-            }
         }
         .background(Color(UIColor.systemGray6))
         .onAppear {
@@ -199,6 +188,11 @@ struct ChatThreadDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Color.clear.frame(width: 0, height: 0)
+            }
+        }
+        .navigationDestination(isPresented: $navigateToContinueChat) {
+            if let agent = agentForContinue {
+                AgentDetailView(agent: agent, initialThreadId: thread.threadId)
             }
         }
     }

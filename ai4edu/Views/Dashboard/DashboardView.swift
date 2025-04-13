@@ -514,16 +514,12 @@ struct AgentCard: View {
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .background(
-            NavigationLink(
-                destination: detailedAgent != nil ? 
-                    AgentDetailView(agent: detailedAgent ?? agent)
-                        .navigationBarHidden(true) : nil,
-                isActive: $navigateToAgentDetail
-            ) {
-                EmptyView()
+        .navigationDestination(isPresented: $navigateToAgentDetail) {
+            if let detailedAgent = detailedAgent {
+                AgentDetailView(agent: detailedAgent)
+                    .navigationBarHidden(true)
             }
-        )
+        }
         .alert(isPresented: $showError) {
             Alert(
                 title: Text("Error"),

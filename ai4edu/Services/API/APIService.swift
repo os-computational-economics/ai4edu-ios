@@ -117,12 +117,6 @@ class APIService {
                 let decodedResponse = try JSONDecoder().decode(AgentsListResponse.self, from: data)
                 completion(.success(decodedResponse))
             } catch {
-                
-                if let responseDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = responseDict["message"] as? String {
-                    // Server message handling
-                }
-                
                 completion(.failure(error))
             }
         }.resume()
@@ -160,10 +154,6 @@ class APIService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                // Removed header logging
-            }
-            
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return
@@ -173,11 +163,6 @@ class APIService {
                 let decodedResponse = try JSONDecoder().decode(UserListResponse.self, from: data)
                 completion(.success(decodedResponse))
             } catch {
-                if let responseDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = responseDict["message"] as? String {
-                    // Server message handling
-                }
-                
                 completion(.failure(error))
             }
         }.resume()

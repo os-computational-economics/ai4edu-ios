@@ -26,7 +26,7 @@ struct ThreadHistoryView: View {
     @State private var currentWorkspaceId: String = ""
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 if isLoading && threads.isEmpty {
                     Spacer()
@@ -101,23 +101,16 @@ struct ThreadHistoryView: View {
                         await refreshThreadsAsync()
                     }
                 }
-                
-                NavigationLink(
-                    destination: Group {
-                        if let thread = selectedThread {
-                            ChatThreadDetailView(thread: thread)
-                                .navigationBarHidden(true)
-                        }
-                    },
-                    isActive: $navigateToThreadDetail
-                ) {
-                    EmptyView()
+            }
+//            .navigationTitle("Chat History")
+//            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $navigateToThreadDetail) {
+                if let thread = selectedThread {
+                    ChatThreadDetailView(thread: thread)
+                        .navigationBarHidden(true)
                 }
             }
-            .navigationBarTitle("Chat History", displayMode: .inline)
-            .navigationBarHidden(true)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             loadThreadsIfNeeded()
         }
