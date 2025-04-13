@@ -171,12 +171,14 @@ struct AgentDetailView: View {
                         action: { selectedTab = .chat }
                     )
                     
-                    TabButton(
-                        title: "Details",
-                        systemImage: "info.circle",
-                        isSelected: selectedTab == .details,
-                        action: { selectedTab = .details }
-                    )
+                    if !isStudent {
+                        TabButton(
+                            title: "Details",
+                            systemImage: "info.circle",
+                            isSelected: selectedTab == .details,
+                            action: { selectedTab = .details }
+                        )
+                    }
                     
                     TabButton(
                         title: "Files",
@@ -472,40 +474,6 @@ struct AgentDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         detailRow(title: "Voice Enabled", value: agent.voice ? "Yes" : "No")
                         detailRow(title: "Allow Model Choice", value: agent.allowModelChoice ? "Yes" : "No")
-                    }
-                }
-                
-                detailCard(title: "Timestamps") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        detailRow(title: "Created", value: agent.createdAt != nil ? formatDate(agent.createdAt!, includeTime: true) : "Not available")
-                        detailRow(title: "Last Updated", value: agent.updatedAt != nil ? formatDate(agent.updatedAt!, includeTime: true) : "Not available")
-                    }
-                }
-                
-                if !agent.agentFiles.isEmpty {
-                    detailCard(title: "Attached Files (\(agent.agentFiles.count))") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(Array(agent.agentFiles), id: \.key) { fileId, fileName in
-                                HStack {
-                                    Image(systemName: "doc.text")
-                                        .foregroundColor(.blue)
-                                    
-                                    Text(fileName)
-                                        .font(.subheadline)
-                                    
-                                    Spacer()
-                                    
-                                    Text("ID: \(fileId)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.vertical, 4)
-                                
-                                if fileId != Array(agent.agentFiles).last?.key {
-                                    Divider()
-                                }
-                            }
-                        }
                     }
                 }
             }
