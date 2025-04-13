@@ -17,6 +17,7 @@ struct MainView: View {
     @State private var agentForContinue: Agent? = nil
     @State private var threadIdForContinue: String? = nil
     @State private var hideTabBar: Bool = false
+    @State private var showLogoutConfirmation: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -267,6 +268,11 @@ struct MainView: View {
             
             setupTabBarNotifications()
             
+            // Set default tab if not already set
+            if appState.currentTab == .dashboard {
+                appState.currentTab = .agents
+            }
+            
             // Token validation happens automatically via TokenManager
         }
     }
@@ -356,7 +362,7 @@ struct MainView: View {
                 .padding(.horizontal)
                 
                 Button(action: {
-                    appState.logout()
+                    showLogoutConfirmation = true
                 }) {
                     HStack {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -380,6 +386,14 @@ struct MainView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .padding(.horizontal)
+                .alert("Confirm Logout", isPresented: $showLogoutConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Logout", role: .destructive) {
+                        appState.logout()
+                    }
+                } message: {
+                    Text("Are you sure you want to log out?")
+                }
                 
                 TokensView()
                     .padding(.horizontal)
@@ -397,7 +411,7 @@ struct MainView: View {
                             Text("AI4EDU")
                                 .font(.headline)
                             
-                            Text("Version 1.0")
+                            Text("Version 1.0.2")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }

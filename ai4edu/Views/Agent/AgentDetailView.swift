@@ -151,24 +151,31 @@ struct AgentDetailView: View {
                 }
                 .padding(.top, 8)
             }
-            .padding()
+            .padding([.top, .horizontal])
             .background(Color(UIColor.systemBackground))
             .overlay(
                 Divider(),
                 alignment: .bottom
             )
             
-            TabView(selection: $selectedTab) {
+            // Custom tab view implementation with opacity transitions
+            ZStack {
                 chatView
-                    .tag(DetailTab.chat)
+                    .opacity(selectedTab == .chat ? 1 : 0)
+                    .scaleEffect(selectedTab == .chat ? 1 : 0.97)
+                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
                 
                 agentDetailsView
-                    .tag(DetailTab.details)
+                    .opacity(selectedTab == .details ? 1 : 0)
+                    .scaleEffect(selectedTab == .details ? 1 : 0.97)
+                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
                 
                 filesView
-                    .tag(DetailTab.files)
+                    .opacity(selectedTab == .files ? 1 : 0)
+                    .scaleEffect(selectedTab == .files ? 1 : 0.97)
+                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            .edgesIgnoringSafeArea(.bottom)
         }
         .edgesIgnoringSafeArea(.bottom)
         .navigationTitle("")
