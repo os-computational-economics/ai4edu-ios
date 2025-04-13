@@ -80,7 +80,6 @@ class APIService {
     
     func fetchAgents(page: Int, pageSize: Int, workspaceId: String, completion: @escaping (Result<AgentsListResponse, Error>) -> Void) {
         let endpoint = "/admin/agents/agents"
-        print("##### called")
         
         var urlComponents = URLComponents(string: baseURL + endpoint)
         urlComponents?.queryItems = [
@@ -100,8 +99,6 @@ class APIService {
         
         if let accessToken = TokenManager.shared.getAccessToken() {
             request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("📱 AGENTS-API - WARNING: No access token available for authorization")
         }
         
         
@@ -123,7 +120,7 @@ class APIService {
                 
                 if let responseDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let message = responseDict["message"] as? String {
-                    print("📱 AGENTS-API - Server message: \(message)")
+                    // Server message handling
                 }
                 
                 completion(.failure(error))
@@ -154,8 +151,6 @@ class APIService {
         
         if let accessToken = TokenManager.shared.getAccessToken() {
             request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("📱 USERS-API - WARNING: No access token available for authorization")
         }
         
         
@@ -166,19 +161,12 @@ class APIService {
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                httpResponse.allHeaderFields.forEach { key, value in
-                    print("📱 USERS-API -   \(key): \(value)")
-                }
+                // Removed header logging
             }
             
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return
-            }
-            
-            
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📱 USERS-API - Raw Response: \(responseString)")
             }
             
             do {
@@ -187,7 +175,7 @@ class APIService {
             } catch {
                 if let responseDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let message = responseDict["message"] as? String {
-                    print("📱 USERS-API - Server message: \(message)")
+                    // Server message handling
                 }
                 
                 completion(.failure(error))

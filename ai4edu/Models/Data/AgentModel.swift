@@ -71,9 +71,6 @@ struct Agent: Identifiable, Codable {
         creator = try container.decodeIfPresent(String.self, forKey: .creator) ?? ""
         updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
         systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt)
-        
-        // Debug
-        print("📱 AGENT-MODEL - Decoded agentFiles: \(agentFiles)")
     }
     
     // Add regular initializer for mock data
@@ -150,11 +147,7 @@ extension Agent {
             if let agents = try? JSONDecoder().decode([Agent].self, from: cachedAgents) {
                 let found = agents.first(where: { $0.agentId == id })
                 return found
-            } else {
-                print("🔍 Failed to decode cached agents")
             }
-        } else {
-            print("🔍 No cached agents found in UserDefaults")
         }
         
         let found = mockAgents.first(where: { $0.agentId == id })

@@ -86,7 +86,6 @@ struct ThreadHistoryView: View {
                                 ThreadListItem(thread: thread)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        print("Selected thread: \(thread.threadId)")
                                         selectedThread = thread
                                         navigateToThreadDetail = true
                                     }

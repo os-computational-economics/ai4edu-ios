@@ -230,10 +230,6 @@ struct AgentDetailView: View {
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
             
-            // Debug print agent files
-            print("📱 AGENT-DETAIL - Agent files: \(agent.agentFiles)")
-            print("📱 AGENT-DETAIL - Agent files count: \(agent.agentFiles.count)")
-            
             if !hasInitialized {
                 hasInitialized = true
                 
@@ -243,8 +239,6 @@ struct AgentDetailView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         loadThreadMessages(threadId: threadId)
                     }
-                } else {
-                    print("📱 AGENT-DETAIL - No initial thread ID, starting fresh conversation")
                 }
             }
         }
@@ -616,7 +610,6 @@ struct AgentDetailView: View {
     // MARK: - Helper Functions
     
     private func sendMessage() {
-        print("messageTExt: \(messageText)")
         guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
         let userMessage = ChatMessage(
@@ -634,7 +627,6 @@ struct AgentDetailView: View {
         
         // If we already have a thread ID, use it, otherwise create a new thread
         if let threadId = currentThreadId {
-            print("Reusing existing thread: \(threadId)")
             sendMessageToThread(userMessageText, threadId: threadId)
         } else {
             ChatService.shared.createNewThread(
@@ -643,12 +635,10 @@ struct AgentDetailView: View {
             ) { result in
                 switch result {
                 case .success(let threadId):
-                    print("successfully created new thread with id: \(threadId)")
                     self.currentThreadId = threadId
                     self.sendMessageToThread(userMessageText, threadId: threadId)
                     
                 case .failure(let error):
-                    print("Error creating thread: \(error)")
                     DispatchQueue.main.async {
                         self.isLoading = false
                         

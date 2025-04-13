@@ -306,13 +306,7 @@ struct MainView: View {
             
             setupTabBarNotifications()
             
-            if let accessToken = TokenManager.shared.getAccessToken(),
-               let refreshToken = TokenManager.shared.getRefreshToken() {
-                print("=== Current Tokens ===")
-                print("Access Token: \(accessToken)")
-                print("Refresh Token: \(refreshToken)")
-                print("====================")
-            }
+            // Token validation happens automatically via TokenManager
         }
     }
     

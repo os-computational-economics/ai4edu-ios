@@ -128,7 +128,7 @@ class TokenManager {
             } else if let idString = userIdClaim.string {
                 userId = idString
             } else {
-                print("DEBUG: Unable to extract user_id, using default: 0")
+                // Unable to extract user_id, using default
             }
             let subject = "user:\(userId)"
             
@@ -307,34 +307,6 @@ class TokenManager {
         }
     }
     
-    func debugPrintToken() {
-
-        guard let decoded = decodeToken() else {
-            print("Failed to decode token.")
-            return
-        }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .medium
-        
-        let now = Date()
-        if now > decoded.expiresAt {
-            print("  Status: EXPIRED (token expired \(formatTimeInterval(now.timeIntervalSince(decoded.expiresAt))) ago)")
-        } else {
-            print("  Status: VALID (expires in \(formatTimeInterval(decoded.expiresAt.timeIntervalSince(now))))")
-        }
-        
-        if decoded.workspaceRoles.isEmpty {
-            print("  No workspace roles found")
-        } else {
-            for (workspace, role) in decoded.workspaceRoles.sorted(by: { $0.key < $1.key }) {
-                print("  Workspace: \(workspace), Role: \(role.capitalized)")
-            }
-        }
-        
-    }
-    
     private func formatTimeInterval(_ interval: TimeInterval) -> String {
         let secondsTotal = Int(abs(interval))
         let days = secondsTotal / (60 * 60 * 24)
@@ -390,7 +362,7 @@ class TokenManager {
                 return idString
             }
         } catch {
-            print("DEBUG: Failed to decode JWT for user_id: \(error)")
+            // Failed to decode JWT for user_id
             
             let parts = tokenString.components(separatedBy: ".")
             if parts.count >= 2 {

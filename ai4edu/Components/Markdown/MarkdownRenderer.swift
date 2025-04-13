@@ -190,7 +190,7 @@ struct SyntaxHighlightedText: View {
                     }
                 }
             } catch {
-                print("Error creating regex: \(error)")
+                // Error creating regex
             }
         }
         

@@ -38,7 +38,6 @@ struct DashboardView: View {
         }
         .onAppear {
             loadData()
-            TokenManager.shared.debugPrintToken()
             setupTabBarNotifications()
         }
     }
@@ -90,18 +89,6 @@ struct DashboardView: View {
         workspaceRoles = TokenManager.shared.getWorkspaceRoles()
         
         courses = CourseManager.shared.getCourses()
-        
-        printWorkspaceRoles()
-    }
-    
-    private func printWorkspaceRoles() {
-        TokenManager.shared.debugPrintToken()
-        
-        if !workspaceRoles.isEmpty {
-            for (workspaceId, role) in workspaceRoles.sorted(by: { $0.key < $1.key }) {
-                print("  Workspace: \(workspaceId), Role: \(role.capitalized)")
-            }
-        }
     }
 }
 
@@ -402,16 +389,20 @@ struct AgentsView: View {
                 case .failure(let error):
                     
                     if let urlError = error as? URLError {
-                        print("📱 AGENTS - URLError code: \(urlError.code.rawValue)")
+                        // Handle URL error cases
                         switch urlError.code {
                         case .notConnectedToInternet:
-                            print("📱 AGENTS - Device is not connected to internet")
+                            // Device is not connected to internet
+                            break
                         case .timedOut:
-                            print("📱 AGENTS - Request timed out")
+                            // Request timed out
+                            break
                         case .cannotFindHost:
-                            print("📱 AGENTS - Cannot find host")
+                            // Cannot find host
+                            break
                         default:
-                            print("📱 AGENTS - Other URLError")
+                            // Other URLError
+                            break
                         }
                     }
                     
@@ -551,15 +542,9 @@ struct AgentCard: View {
                 
                 switch result {
                 case .success(let detailedAgent):
-                    print("📱 AGENT-CARD - Detailed agent files: \(detailedAgent.agentFiles)")
-                    print("📱 AGENT-CARD - Files count: \(detailedAgent.agentFiles.count)")
-                    print("📱 AGENT-CARD - Original agent: \(self.agent.agentName)")
-                    print("📱 AGENT-CARD - Detailed agent: \(detailedAgent.agentName)")
-                    
                     self.detailedAgent = detailedAgent
                     self.navigateToAgentDetail = true
                 case .failure(let error):
-                    print("📱 AGENT-CARD - Failed to get agent details: \(error.localizedDescription)")
                     self.errorMessage = "Failed to load agent details: \(error.localizedDescription)"
                     self.showError = true
                     // Fall back to the basic agent info if details can't be loaded

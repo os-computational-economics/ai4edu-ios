@@ -39,8 +39,6 @@ class ChatService {
         
         if let accessToken = getAccessToken() {
             request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("📱 CHAT-API - WARNING: No access token available for authorization")
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -49,20 +47,12 @@ class ChatService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📱 CHAT-API - HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return
             }
             
             do {
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("📱 CHAT-API - Raw Response: \(responseString)")
-                }
-                
                 let response = try JSONDecoder().decode(ThreadResponse.self, from: data)
                 completion(.success(response.data.threadId))
             } catch {
@@ -95,20 +85,12 @@ class ChatService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📱 CHAT-API - HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return
             }
             
             do {
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("📱 CHAT-API - Response: \(responseString.prefix(200))...")
-                }
-                
                 let response = try JSONDecoder().decode(ThreadMessagesWrapper.self, from: data)
                 
                 let messages = response.data.messages.map { apiMessage -> Message in
@@ -126,20 +108,7 @@ class ChatService {
                     completion(.success(messages))
                 }
             } catch {
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .keyNotFound(let key, let context):
-                        print("📱 CHAT-API - Key '\(key.stringValue)' not found: \(context.debugDescription)")
-                    case .valueNotFound(let type, let context):
-                        print("📱 CHAT-API - Value of type \(type) not found: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
-                        print("📱 CHAT-API - Type mismatch for type \(type): \(context.debugDescription)")
-                    case .dataCorrupted(let context):
-                        print("📱 CHAT-API - Data corrupted: \(context.debugDescription)")
-                    @unknown default:
-                        print("📱 CHAT-API - Unknown decoding error")
-                    }
-                }
+                // Error handling without logging
                 completion(.failure(error))
             }
         }.resume()
@@ -180,22 +149,12 @@ class ChatService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                httpResponse.allHeaderFields.forEach { key, value in
-                    print("📱 CHAT-API -   \(key): \(value)")
-                }
-            }
-            
             guard let data = data else {
                 completion(.failure(APIError.noData))
                 return
             }
             
             do {
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("📱 CHAT-API - Raw Response: \(responseString)")
-                }
-                
                 let response = try JSONDecoder().decode(ThreadsListWrapper.self, from: data)
                 
                 if response.data.items.isEmpty {
@@ -211,22 +170,7 @@ class ChatService {
                     completion(.success((threads: threads, total: total)))
                 }
             } catch {
-                
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .keyNotFound(let key, let context):
-                        print("📱 CHAT-API - Key '\(key.stringValue)' not found: \(context.debugDescription)")
-                    case .valueNotFound(let type, let context):
-                        print("📱 CHAT-API - Value of type \(type) not found: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
-                        print("📱 CHAT-API - Type mismatch for type \(type): \(context.debugDescription)")
-                    case .dataCorrupted(let context):
-                        print("📱 CHAT-API - Data corrupted: \(context.debugDescription)")
-                    @unknown default:
-                        print("📱 CHAT-API - Unknown decoding error")
-                    }
-                }
-                
+                // Error handling without logging
                 completion(.failure(error))
             }
         }.resume()
@@ -298,12 +242,6 @@ class ChatService {
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                httpResponse.allHeaderFields.forEach { key, value in
-                    print("📱 CHAT-API -   \(key): \(value)")
-                }
-            }
-            
             guard let data = data else {
                 DispatchQueue.main.async {
                     completion(.failure(APIError.noData))
@@ -315,8 +253,6 @@ class ChatService {
                 
                 let events = dataString.components(separatedBy: "\n")
                     .filter { !$0.isEmpty && $0.hasPrefix("data: ") }
-                
-                print("📱 CHAT-API - Found \(events.count) events in response")
                 
                 if let lastEvent = events.last?.dropFirst(6) {
                         let jsonData = Data(lastEvent.utf8)
@@ -367,127 +303,6 @@ class ChatService {
         }
         
         task.resume()
-    }
-    
-    // MARK: - AsyncStream message
-    func streamMessage(message: String, threadId: String, agentId: String, workspaceId: String, previousMessages: [[String: Any]]? = nil) -> AsyncThrowingStream<String, Error> {
-        return AsyncThrowingStream { continuation in
-            let endpoint = "/user/stream_chat"
-            
-            guard let url = URL(string: baseURL + endpoint) else {
-                continuation.finish(throwing: APIError.invalidURL)
-                return
-            }
-            
-            let userId = getCurrentUserID()
-            
-            var messagesDict = [String: [String: String]]()
-            
-            if let previousMessages = previousMessages {
-                for (index, msgDict) in previousMessages.enumerated() {
-                    if let role = msgDict["role"] as? String,
-                       let content = msgDict["content"] as? String {
-                        messagesDict["\(index)"] = ["role": role, "content": content]
-                    }
-                }
-            } else {
-                messagesDict["0"] = ["role": "user", "content": message]
-            }
-            
-            let chatMessage = [
-                "dynamic_auth_code": "random",
-                "messages": messagesDict,
-                "thread_id": threadId,
-                "workspace_id": workspaceId,
-                "provider": "openai",
-                "user_id": userId,
-                "agent_id": agentId,
-                "voice": false
-            ] as [String: Any]
-            
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            
-            if let accessToken = getAccessToken() {
-                request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-            } else {
-                continuation.finish(throwing: APIError.networkError)
-                return
-            }
-            
-            do {
-                let jsonData = try JSONSerialization.data(withJSONObject: chatMessage)
-                request.httpBody = jsonData
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    print("📱 CHAT-API - [Stream] Request payload: \(jsonString)")
-                }
-            } catch {
-                continuation.finish(throwing: error)
-                return
-            }
-            
-            let task = URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    continuation.finish(throwing: error)
-                    return
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse {
-                    httpResponse.allHeaderFields.forEach { key, value in
-                        print("📱 CHAT-API - [Stream]   \(key): \(value)")
-                    }
-                }
-                
-                guard let data = data else {
-                    continuation.finish(throwing: APIError.noData)
-                    return
-                }
-                
-                
-                if let dataString = String(data: data, encoding: .utf8) {
-                    
-                    let events = dataString.components(separatedBy: "\n")
-                        .filter { !$0.isEmpty && $0.hasPrefix("data: ") }
-                    
-                    
-                    var lastResponse = ""
-                    var messageId = ""
-                    var eventCounter = 0
-                    
-                    for eventString in events {
-                        eventCounter += 1
-                        let event = eventString.dropFirst(6)
-                        
-                            let jsonData = Data(event.utf8)
-                            if let responseDict = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any],
-                               let responseText = responseDict["response"] as? String {
-                                
-                                lastResponse = responseText
-                                if let msgId = responseDict["msg_id"] as? String {
-                                    messageId = msgId
-                                }
-                                
-                                continuation.yield(lastResponse)
-                            } else {
-                                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                                    print("📱 CHAT-API - [Stream] Raw JSON: \(jsonString)")
-                                }
-                            }
-                    }
-                    
-                    if !lastResponse.isEmpty {
-                        continuation.finish()
-                    } else {
-                        continuation.finish(throwing: APIError.decodingError)
-                    }
-                } else {
-                    continuation.finish(throwing: APIError.decodingError)
-                }
-            }
-            
-            task.resume()
-        }
     }
     
     func streamMessageWithCallback(
@@ -547,9 +362,6 @@ class ChatService {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: chatMessage)
             request.httpBody = jsonData
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                print("📱 CHAT-API - [StreamCallback] Request payload: \(jsonString)")
-            }
         } catch {
             onCompletion(.failure(error))
             return
@@ -662,51 +474,6 @@ class ChatService {
                 onCompletion(.failure(APIError.decodingError))
             }
         }
-    }
-    
-    // MARK: - Feedback
-    
-    func submitRating(threadId: String, messageId: String, rating: Int, completion: @escaping (Result<Bool, Error>) -> Void) {
-        let endpoint = "/feedback/feedback"
-        
-        guard let url = URL(string: baseURL + endpoint) else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
-        
-        let feedback = [
-            "thread_id": threadId,
-            "message_id": messageId,
-            "rating": rating
-        ] as [String: Any]
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if let accessToken = getAccessToken() {
-            request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("📱 CHAT-API - WARNING: No access token available for authorization")
-        }
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: feedback)
-        } catch {
-            completion(.failure(error))
-            return
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            DispatchQueue.main.async {
-                completion(.success(true))
-            }
-        }.resume()
     }
     
     // MARK: - Helper Methods
