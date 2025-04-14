@@ -45,6 +45,9 @@ To create or modify an agent, use the web-based version of the platform at the l
 
 Built using **SwiftUI** for iOS.  
 Requires **Xcode** and a device or simulator running iOS 15.0 or later.
+We’ve reused some of the code and logic from the **web version** of the [AI4EDU](https://dashboard.ai4edu.io/) project. The backend has not been modified.
+
+---
 
 ## Q&A
 
