@@ -10,34 +10,6 @@ import Combine
 import Foundation
 import UIKit
 
-// MARK: - Keyboard Handling
-
-extension View {
-    func keyboardAdaptive() -> some View {
-        ModifiedContent(content: self, modifier: KeyboardAdaptive())
-    }
-}
-
-struct KeyboardAdaptive: ViewModifier {
-    @State private var keyboardHeight: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        content
-            .padding(.bottom, keyboardHeight)
-            .onAppear {
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
-                    if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                        self.keyboardHeight = keyboardFrame.height - 32
-                    }
-                }
-                
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
-                    self.keyboardHeight = 0
-                }
-            }
-    }
-}
-
 struct AgentDetailView: View {
     let agent: Agent
     var initialThreadId: String? = nil
@@ -777,37 +749,5 @@ struct AgentDetailView: View {
             return Date(timeIntervalSince1970: timestamp / 1000.0)
         }
         return Date()
-    }
-}
-
-// MARK: - Chat Components
-
-struct ChatMessage: Identifiable {
-    let id: String
-    var text: String
-    let isFromUser: Bool
-    let timestamp: Date
-}
-
-// MARK: - Streaming Helper
-
-class StreamingObserver: ObservableObject {
-    @Published var content: String = ""
-    @Published var lastUpdatedId: String = UUID().uuidString
-    var placeholderId: String = ""
-    var onUpdate: ((String) -> Void)?
-    
-    func reset(placeholderId: String) {
-        self.content = ""
-        self.placeholderId = placeholderId
-        self.lastUpdatedId = UUID().uuidString
-    }
-    
-    func updateContent(_ newContent: String) {
-        DispatchQueue.main.async { [self] in
-            self.content = newContent
-            self.lastUpdatedId = UUID().uuidString
-            self.onUpdate?(newContent)
-        }
     }
 }

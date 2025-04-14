@@ -102,8 +102,6 @@ struct ThreadHistoryView: View {
                     }
                 }
             }
-//            .navigationTitle("Chat History")
-//            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $navigateToThreadDetail) {
                 if let thread = selectedThread {
                     ChatThreadDetailView(thread: thread)
