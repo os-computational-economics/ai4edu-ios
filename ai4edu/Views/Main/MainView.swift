@@ -268,12 +268,10 @@ struct MainView: View {
             
             setupTabBarNotifications()
             
-            // Set default tab if not already set
             if appState.currentTab == .dashboard {
                 appState.currentTab = .agents
             }
             
-            // Token validation happens automatically via TokenManager
         }
     }
     

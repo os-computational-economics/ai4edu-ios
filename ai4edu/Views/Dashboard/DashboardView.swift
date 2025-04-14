@@ -485,7 +485,7 @@ struct AgentCard: View {
                                 .stroke(role == "teacher" ? Color.gray.opacity(0.3) : Color.red.opacity(0.5), lineWidth: 1)
                         )
                     }
-                    .disabled(role == "teacher") // Disable for teachers
+                    .disabled(role == "teacher")
                 }
                 
                 if role == "admin" {
@@ -543,7 +543,6 @@ struct AgentCard: View {
                 case .failure(let error):
                     self.errorMessage = "Failed to load agent details: \(error.localizedDescription)"
                     self.showError = true
-                    // Fall back to the basic agent info if details can't be loaded
                     self.detailedAgent = self.agent
                     self.navigateToAgentDetail = true
                 }

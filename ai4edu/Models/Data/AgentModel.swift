@@ -52,11 +52,9 @@ struct Agent: Identifiable, Codable {
         case systemPrompt = "system_prompt"
     }
     
-    // Add initializer with default values for optional fields
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        // Required fields
         agentId = try container.decode(String.self, forKey: .agentId)
         agentName = try container.decode(String.self, forKey: .agentName)
         workspaceId = try container.decode(String.self, forKey: .workspaceId)
@@ -65,7 +63,6 @@ struct Agent: Identifiable, Codable {
         model = try container.decode(String.self, forKey: .model)
         status = try container.decode(Int.self, forKey: .status)
         
-        // Optional fields
         agentFiles = try container.decodeIfPresent([String: String].self, forKey: .agentFiles) ?? [:]
         createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
         creator = try container.decodeIfPresent(String.self, forKey: .creator) ?? ""
@@ -73,7 +70,6 @@ struct Agent: Identifiable, Codable {
         systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt)
     }
     
-    // Add regular initializer for mock data
     init(agentId: String, agentName: String, workspaceId: String, voice: Bool, 
          allowModelChoice: Bool, model: String, agentFiles: [String: String], 
          status: Int, createdAt: String?, creator: String, updatedAt: String?, 

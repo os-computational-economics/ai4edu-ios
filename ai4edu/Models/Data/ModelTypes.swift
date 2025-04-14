@@ -56,7 +56,6 @@ struct MessageResponse: Codable {
     }
 }
 
-/// Source document referenced in a message
 struct Source: Codable, Identifiable {
     let id = UUID()
     let fileId: String
@@ -71,12 +70,6 @@ struct Source: Codable, Identifiable {
     }
 }
 
-// MARK: - Agent Types
-
-// Agent is defined in AgentModel.swift
-// Import AgentModel when needed for Agent struct 
-
-// MARK: - File Types
 
 /// File type for document display
 enum FileType {

@@ -157,12 +157,6 @@ class ChatService {
             do {
                 let response = try JSONDecoder().decode(ThreadsListWrapper.self, from: data)
                 
-                if response.data.items.isEmpty {
-                    print("📱 CHAT-API - No threads found")
-                } else if let firstThread = response.data.items.first {
-                    print("📱 CHAT-API - First thread: \(firstThread.threadId), Agent: \(firstThread.agentName)")
-                }
-                
                 let threads = response.data.items
                 let total = response.data.total
                 
@@ -514,8 +508,6 @@ class ChatService {
         let endpoint = "/admin/agents/agent/\(agentId)"
         let apiUrl = baseURL + endpoint
         
-        print("📱 AGENT-API - Requesting agent details from: \(apiUrl)")
-        
         guard let url = URL(string: apiUrl) else {
             completion(.failure(NSError(domain: "ChatService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
@@ -526,144 +518,25 @@ class ChatService {
         
         if let accessToken = getAccessToken() {
             request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("📱 AGENT-API - WARNING: No access token available for authorization")
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("📱 AGENT-API - Error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📱 AGENT-API - HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
             guard let data = data else {
-                print("📱 AGENT-API - No data received from server")
                 completion(.failure(NSError(domain: "ChatService", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
                 return
             }
             
-            // Log the full response
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("📱 AGENT-API - Full Response: \(jsonString)")
-            }
-            
             do {
                 let agentResponse = try JSONDecoder().decode(SingleAgentResponse.self, from: data)
-                
-                // Debug - print agent files information
-                print("📱 AGENT-API - Decoded agent files: \(agentResponse.data.agentFiles)")
-                print("📱 AGENT-API - Files count: \(agentResponse.data.agentFiles.count)")
-                
                 completion(.success(agentResponse.data))
             } catch {
-                print("📱 AGENT-API - Decoding error: \(error)")
-                
-                // Additional debug - try to parse manually to see files
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let data = json["data"] as? [String: Any],
-                   let files = data["agent_files"] as? [String: String] {
-                    print("📱 AGENT-API - Manual parse of files: \(files)")
-                    print("📱 AGENT-API - Manual files count: \(files.count)")
-                }
-                
                 completion(.failure(error))
             }
         }.resume()
-    }
-}
-
-// MARK: - Response Models
-
-struct ThreadResponse: Codable {
-    let data: ThreadData
-    let message: String
-    let success: Bool
-}
-
-struct ThreadData: Codable {
-    let threadId: String
-    
-    enum CodingKeys: String, CodingKey {
-        case threadId = "thread_id"
-    }
-}
-
-struct ThreadMessagesWrapper: Codable {
-    let data: ThreadMessagesData
-    let message: String
-    let success: Bool
-}
-
-struct ThreadMessagesData: Codable {
-    let threadId: String
-    let messages: [ThreadMessage]
-    
-    enum CodingKeys: String, CodingKey {
-        case threadId = "thread_id"
-        case messages
-    }
-}
-
-struct ThreadMessage: Codable {
-    let threadId: String
-    let createdAt: String
-    let msgId: String
-    let userId: String
-    let role: String
-    let content: String
-    
-    enum CodingKeys: String, CodingKey {
-        case threadId = "thread_id"
-        case createdAt = "created_at"
-        case msgId = "msg_id"
-        case userId = "user_id"
-        case role
-        case content
-    }
-}
-
-struct ThreadInfo: Codable, Identifiable {
-    let threadId: String
-    let createdAt: String
-    let agentId: String
-    let userId: Int
-    let workspaceId: String
-    let agentName: String
-    
-    var id: String { threadId }
-    
-    enum CodingKeys: String, CodingKey {
-        case threadId = "thread_id"
-        case createdAt = "created_at"
-        case agentId = "agent_id"
-        case userId = "user_id"
-        case workspaceId = "workspace_id"
-        case agentName = "agent_name"
-    }
-}
-
-struct ThreadsListWrapper: Codable {
-    let data: ThreadsListData
-    let message: String
-    let success: Bool
-}
-
-struct ThreadsListData: Codable {
-    let items: [ThreadInfo]
-    let total: Int
-}
-
-struct SingleAgentResponse: Codable {
-    let data: Agent
-    let message: String
-    let success: Bool
-    
-    enum CodingKeys: String, CodingKey {
-        case data, message, success
     }
 }
