@@ -411,7 +411,7 @@ struct MainView: View {
                             Text("AI4EDU")
                                 .font(.headline)
                             
-                            Text("Version 1.0.2")
+                            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.2")")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }

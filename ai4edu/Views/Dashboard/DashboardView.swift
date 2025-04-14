@@ -246,7 +246,7 @@ struct AgentsView: View {
                     } else if !hasMorePages && !agents.isEmpty {
                         VStack(spacing: 8) {
                             Divider()
-                            Text("End of list - No more agents")
+                            Text("End of Agents List")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 12)
@@ -282,7 +282,7 @@ struct AgentsView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(8)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        .padding(8)
+//        .padding(8)
     }
     
     private func loadAgentsIfNeeded() {

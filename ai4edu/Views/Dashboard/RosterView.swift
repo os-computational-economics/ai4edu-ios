@@ -120,7 +120,7 @@ struct RosterView: View {
                     } else if !hasMorePages && !users.isEmpty {
                         VStack(spacing: 8) {
                             Divider()
-                            Text("End of list - No more users")
+                            Text("End of User List")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 12)

@@ -140,7 +140,7 @@ struct ThreadHistoryView: View {
                         loadMoreThreads()
                     }
             } else {
-                Text("End of chat history")
+                Text("End of Chat History")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding()
