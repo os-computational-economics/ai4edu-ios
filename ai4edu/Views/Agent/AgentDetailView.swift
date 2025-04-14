@@ -25,6 +25,8 @@ struct AgentDetailView: View {
     @State private var messageUpdateCounter: Int = 0
     @StateObject private var streamObserver = StreamingObserver()
     @State private var hasInitialized: Bool = false
+    @State private var showPDFViewer: Bool = false
+    @State private var pdfURL: URL? = nil
     
     enum DetailTab {
         case chat
@@ -158,6 +160,11 @@ struct AgentDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .sheet(isPresented: $showPDFViewer) {
+            if let url = pdfURL {
+                PDFViewer(url: url)
+            }
+        }
         .onAppear {
             NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
             
@@ -422,6 +429,9 @@ struct AgentDetailView: View {
                         .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
                         .padding(.horizontal)
+                        .onTapGesture {
+                            handleFileClick(fileId: fileId)
+                        }
                     }
                 }
             }
@@ -683,6 +693,36 @@ struct AgentDetailView: View {
         default:
             return "doc.fill"
         }
+    }
+    
+    private func handleFileClick(fileId: String) {
+        let urlString = "https://ai4edu-api.jerryang.org/v1/prod/user/get_presigned_url_for_file?file_id=\(fileId)"
+        guard let url = URL(string: urlString) else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        if let accessToken = TokenManager.shared.getAccessToken() {
+            request.addValue("Bearer access=\(accessToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let data = json["data"] as? [String: Any],
+                       let fileUrlString = data["url"] as? String,
+                       let fileUrl = URL(string: fileUrlString) {
+                        DispatchQueue.main.async {
+                            self.pdfURL = fileUrl
+                            self.showPDFViewer = true
+                        }
+                    }
+                } catch {
+                    print("Error parsing JSON: \(error)")
+                }
+            }
+        }.resume()
     }
     
     private func loadThreadMessages(threadId: String) {
