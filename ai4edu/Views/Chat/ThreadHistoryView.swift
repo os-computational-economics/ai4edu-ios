@@ -274,11 +274,23 @@ struct ThreadListItem: View {
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
         
         if let date = dateFormatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "M/d/yyyy, h:mm:ss a"
-            return displayFormatter.string(from: date)
+            let calendar = Calendar.current
+            let now = Date()
+            
+            if calendar.isDateInToday(date) {
+                let displayFormatter = DateFormatter()
+                displayFormatter.dateFormat = "h:mm:ss a"
+                displayFormatter.timeZone = TimeZone.current
+                return displayFormatter.string(from: date)
+            } else {
+                let displayFormatter = DateFormatter()
+                displayFormatter.dateFormat = "M/d/yyyy, h:mm:ss a"
+                displayFormatter.timeZone = TimeZone.current
+                return displayFormatter.string(from: date)
+            }
         }
         
         return dateString

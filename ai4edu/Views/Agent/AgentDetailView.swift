@@ -290,6 +290,9 @@ struct AgentDetailView: View {
                                 }
                             }
                         }
+                        .onTapGesture {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }
                     }
                     
                     VStack(spacing: 0) {
@@ -320,6 +323,7 @@ struct AgentDetailView: View {
                         .padding(.vertical, 10)
                         .background(Color(UIColor.systemBackground))
                     }
+                    .padding(.bottom, 8)
                     .background(Color(UIColor.systemBackground))
                     .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: -1)
                 }
@@ -791,7 +795,11 @@ struct AgentDetailView: View {
         if messageId.contains("#"), 
            let timestampString = messageId.components(separatedBy: "#").last,
            let timestamp = Double(timestampString) {
-            return Date(timeIntervalSince1970: timestamp / 1000.0)
+            // Convert Unix timestamp to local time
+            let date = Date(timeIntervalSince1970: timestamp / 1000.0)
+            let timezone = TimeZone.current
+            let secondsFromGMT = timezone.secondsFromGMT(for: date)
+            return date.addingTimeInterval(TimeInterval(secondsFromGMT))
         }
         return Date()
     }
