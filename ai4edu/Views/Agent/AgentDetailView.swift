@@ -27,6 +27,7 @@ struct AgentDetailView: View {
     @State private var hasInitialized: Bool = false
     @State private var showPDFViewer: Bool = false
     @State private var pdfURL: URL? = nil
+    @State private var selectedFileName: String = ""
     
     enum DetailTab {
         case chat
@@ -39,117 +40,125 @@ struct AgentDetailView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center) {
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.blue)
-                    }
-                    .padding(.trailing, 8)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(agent.agentName)
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(agent.status == 1 ? Color.green : Color.red)
-                                    .frame(width: 10, height: 10)
+        ZStack {
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .center) {
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.trailing, 8)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(alignment: .center, spacing: 12) {
+                                Text(agent.agentName)
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
                                 
-                                Text(agent.status == 1 ? "Active" : "Disabled")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(agent.status == 1 ? .green : .red)
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(agent.status == 1 ? Color.green : Color.red)
+                                        .frame(width: 10, height: 10)
+                                    
+                                    Text(agent.status == 1 ? "Active" : "Disabled")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(agent.status == 1 ? .green : .red)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(agent.status == 1 ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                                )
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(agent.status == 1 ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                            
+                            HStack(spacing: 12) {
+                                Text("Workspace: \(agent.workspaceId)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                if !agent.creator.isEmpty {
+                                    Divider()
+                                        .frame(height: 16)
+                                    
+                                    Text("Created by: \(agent.creator)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    HStack(spacing: 0) {
+                        TabButton(
+                            title: "Chat",
+                            systemImage: "bubble.left.and.bubble.right",
+                            isSelected: selectedTab == .chat,
+                            action: { selectedTab = .chat }
+                        )
+                        
+                        if !isStudent {
+                            TabButton(
+                                title: "Details",
+                                systemImage: "info.circle",
+                                isSelected: selectedTab == .details,
+                                action: { selectedTab = .details }
                             )
                         }
                         
-                        HStack(spacing: 12) {
-                            Text("Workspace: \(agent.workspaceId)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            if !agent.creator.isEmpty {
-                                Divider()
-                                    .frame(height: 16)
-                                
-                                Text("Created by: \(agent.creator)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                
-                HStack(spacing: 0) {
-                    TabButton(
-                        title: "Chat",
-                        systemImage: "bubble.left.and.bubble.right",
-                        isSelected: selectedTab == .chat,
-                        isEnabled: agent.status == 1,
-                        action: { selectedTab = .chat }
-                    )
-                    
-                    if !isStudent {
                         TabButton(
-                            title: "Details",
-                            systemImage: "info.circle",
-                            isSelected: selectedTab == .details,
-                            action: { selectedTab = .details }
+                            title: "Files",
+                            systemImage: "doc.on.doc",
+                            isSelected: selectedTab == .files,
+                            action: { selectedTab = .files }
                         )
+                        
+                        Spacer()
                     }
-                    
-                    TabButton(
-                        title: "Files",
-                        systemImage: "doc.on.doc",
-                        isSelected: selectedTab == .files,
-                        action: { selectedTab = .files }
-                    )
-                    
-                    Spacer()
+                    .padding(.top, 8)
                 }
-                .padding(.top, 8)
+                .padding([.top, .horizontal])
+                .background(Color(UIColor.systemBackground))
+                .overlay(
+                    Divider(),
+                    alignment: .bottom
+                )
+                
+                // Custom tab view implementation with opacity transitions
+                ZStack {
+                    chatView
+                        .opacity(selectedTab == .chat ? 1 : 0)
+                        .scaleEffect(selectedTab == .chat ? 1 : 0.97)
+                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
+                    
+                    agentDetailsView
+                        .opacity(selectedTab == .details ? 1 : 0)
+                        .scaleEffect(selectedTab == .details ? 1 : 0.97)
+                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
+                    
+                    filesView
+                        .opacity(selectedTab == .files ? 1 : 0)
+                        .scaleEffect(selectedTab == .files ? 1 : 0.97)
+                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
+                }
+                .edgesIgnoringSafeArea(.bottom)
             }
-            .padding([.top, .horizontal])
-            .background(Color(UIColor.systemBackground))
-            .overlay(
-                Divider(),
-                alignment: .bottom
-            )
             
-            // Custom tab view implementation with opacity transitions
-            ZStack {
-                chatView
-                    .opacity(selectedTab == .chat ? 1 : 0)
-                    .scaleEffect(selectedTab == .chat ? 1 : 0.97)
-                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
-                
-                agentDetailsView
-                    .opacity(selectedTab == .details ? 1 : 0)
-                    .scaleEffect(selectedTab == .details ? 1 : 0.97)
-                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
-                
-                filesView
-                    .opacity(selectedTab == .files ? 1 : 0)
-                    .scaleEffect(selectedTab == .files ? 1 : 0.97)
-                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
+            if showPDFViewer, let url = pdfURL {
+                PDFViewer(url: url, fileName: selectedFileName, showPDFViewer: $showPDFViewer)
+                    .transition(.move(edge: .trailing))
+                    .zIndex(1)
+                    .animation(.easeInOut(duration: 0.3), value: showPDFViewer)
             }
-            .edgesIgnoringSafeArea(.bottom)
         }
         .edgesIgnoringSafeArea(.bottom)
         .navigationTitle("")
@@ -160,11 +169,6 @@ struct AgentDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .sheet(isPresented: $showPDFViewer) {
-            if let url = pdfURL {
-                PDFViewer(url: url)
-            }
-        }
         .onAppear {
             NotificationCenter.default.post(name: NSNotification.Name("HideTabBar"), object: nil)
             
@@ -430,7 +434,7 @@ struct AgentDetailView: View {
                         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
                         .padding(.horizontal)
                         .onTapGesture {
-                            handleFileClick(fileId: fileId)
+                            handleFileClick(fileId: fileId, fileName: fileName)
                         }
                     }
                 }
@@ -695,7 +699,7 @@ struct AgentDetailView: View {
         }
     }
     
-    private func handleFileClick(fileId: String) {
+    private func handleFileClick(fileId: String, fileName: String) {
         let urlString = "https://ai4edu-api.jerryang.org/v1/prod/user/get_presigned_url_for_file?file_id=\(fileId)"
         guard let url = URL(string: urlString) else { return }
         
@@ -715,6 +719,7 @@ struct AgentDetailView: View {
                        let fileUrl = URL(string: fileUrlString) {
                         DispatchQueue.main.async {
                             self.pdfURL = fileUrl
+                            self.selectedFileName = fileName
                             self.showPDFViewer = true
                         }
                     }
