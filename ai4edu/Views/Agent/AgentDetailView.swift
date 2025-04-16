@@ -264,7 +264,7 @@ struct AgentDetailView: View {
                                     
                                     Rectangle()
                                         .fill(Color.clear)
-                                        .frame(height: 80)  // Extra space for input area
+                                        .frame(height: 80) 
                                         .id("bottom")
                                 }
                                 .padding(.top)
@@ -795,7 +795,6 @@ struct AgentDetailView: View {
         if messageId.contains("#"), 
            let timestampString = messageId.components(separatedBy: "#").last,
            let timestamp = Double(timestampString) {
-            // Convert Unix timestamp to local time
             let date = Date(timeIntervalSince1970: timestamp / 1000.0)
             let timezone = TimeZone.current
             let secondsFromGMT = timezone.secondsFromGMT(for: date)

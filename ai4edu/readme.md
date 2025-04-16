@@ -13,6 +13,9 @@ To create a new workspace, please contact system admin or Professor Sining Wang 
 To create or modify an agent, use the web-based version of the platform at the link above.
 
 ---
+## System Architecture
+![System Architecture](arch.png)
+
 
 ## Project Structure
 
@@ -47,18 +50,3 @@ Built using **SwiftUI** for iOS.
 Requires **Xcode** and a device or simulator running iOS 15.0 or later.
 We’ve reused some of the code and logic from the **web version** of the [AI4EDU](https://dashboard.ai4edu.io/) project. The backend has not been modified.
 
----
-
-## Q&A
-
-1. **How can I test the APIs?**  
-We've provided several API endpoints for testing. You can try them directly or import the OpenAPI JSON file into Postman.  
-**Note:** Make sure to set the base URL `https://ai4edu-api.jerryang.org` before making any API calls.  
-
-    - [API Documentation](https://ai4edu-api.jerryang.org/v1/dev/admin/docs)  
-    - [OpenAPI JSON](https://ai4edu-api.jerryang.org/v1/dev/admin/openapi.json)
-
-2. **Why can’t I call the API or why do some endpoints return no data?**  
-Most API requests require an access token and are protected by an RBAC system.  
-Every API call must include an authorization header in the format:  `Authorization: Bearer access={access_token}`
-If you're testing in Postman, you’ll need to copy a valid token from the web application and add it to your request headers. Tokens are valid for 30 minutes.

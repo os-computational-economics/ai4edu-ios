@@ -166,7 +166,7 @@ struct AgentsView: View {
                     .font(.title)
                     .padding()
                 
-                Text("This is a placeholder for the add agent form.")
+                Text("Agent Creation is not supported on your phone, please use the web app instead.")
                     .padding()
                 
                 Button("Close") {
@@ -490,7 +490,7 @@ struct AgentCard: View {
                 
                 if role == "admin" {
                     Button(action: {
-                        // Edit action
+                        // TODO: Edit action
                     }) {
                         HStack {
                             Image(systemName: "pencil")

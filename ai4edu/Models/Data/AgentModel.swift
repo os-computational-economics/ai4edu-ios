@@ -7,8 +7,6 @@
 
 import Foundation
 
-// MARK: - Agent Response
-
 struct AgentsListResponse: Codable {
     let data: AgentData
     let message: String

@@ -8,8 +8,6 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Formatting Extensions
-
 extension Message {
     static func loadingMessage() -> Message {
         return Message(
@@ -30,61 +28,6 @@ extension Message {
     
     var isFromUser: Bool {
         return align == "end"
-    }
-}
-
-// MARK: - UI Components
-
-struct SimpleChatBubble: View {
-    let message: String
-    let isFromUser: Bool
-    
-    var body: some View {
-        HStack {
-            if isFromUser {
-                Spacer()
-            }
-            
-            MarkdownText(text: message, isFromUser: isFromUser)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(isFromUser ? 
-                            Color.blue : 
-                            Color(UIColor(red: 1.0, green: 0.97, blue: 0.93, alpha: 1.0)))
-                .cornerRadius(20)
-                .frame(maxWidth: isFromUser ? UIScreen.main.bounds.width * 0.75 : UIScreen.main.bounds.width * 0.85, alignment: isFromUser ? .trailing : .leading)
-            
-            if !isFromUser {
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Preview
-
-struct ChatBubble_Previews: PreviewProvider {
-    static var previews: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                SimpleChatBubble(message: "Hello, how can I help you today?", isFromUser: false)
-                
-                SimpleChatBubble(message: "I need help with **markdown**, `code`, and LaTeX", isFromUser: true)
-                
-                SimpleChatBubble(message: "Sure! Here's an example of *italic* and **bold** text.", isFromUser: false)
-                
-                SimpleChatBubble(message: "# Heading 1\n## Heading 2\n### Heading 3\nThis is how headings look.", isFromUser: false)
-                
-                SimpleChatBubble(message: "Here's a code example:\n```python\ndef hello_world():\n    print('Hello, world!')\n\nhello_world()\n```", isFromUser: false)
-                
-                SimpleChatBubble(message: "And here's a LaTeX equation:\n$$E = mc^2$$", isFromUser: false)
-                
-                SimpleChatBubble(message: "Thank you!", isFromUser: true)
-            }
-            .padding()
-        }
     }
 }
 

@@ -108,7 +108,6 @@ class ChatService {
                     completion(.success(messages))
                 }
             } catch {
-                // Error handling without logging
                 completion(.failure(error))
             }
         }.resume()

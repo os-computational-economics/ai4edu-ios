@@ -3,7 +3,7 @@
 //  ai4edu
 //
 //  Created by Sam Jin on 3/25/25.
-//
+//  Referencing code from AI4EDU Research
 
 import SwiftUI
 import WebKit
