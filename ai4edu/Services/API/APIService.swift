@@ -10,15 +10,15 @@ import Foundation
 class APIService {
     static let shared = APIService()
     
-    private let baseURL = "https://ai4edu-api.jerryang.org/v1/dev"
+    private let baseURL = AppConfig.apiBaseURL
     
     private init() {}
     
     // MARK: - SSO Methods
     
     func getSSOURL(returnURL: String) -> URL? {
-        let baseSSO = "https://login.case.edu/cas/login"
-        let ssoVerifyURL = "\(APIEnvironment.onlineBaseURL)\(APIEnvironment.prodPath)/user/sso"
+        let baseSSO = AppConfig.ssoBaseURL
+        let ssoVerifyURL = "\(AppConfig.baseURL)\(AppConfig.apiPath)/user/sso"
         
         let urlString = "\(baseSSO)?service=\(ssoVerifyURL)?came_from=\(returnURL)"
         return URL(string: urlString)
@@ -136,9 +136,9 @@ class APIService {
 }
 
 // API Environment configuration
-enum APIEnvironment {
-    static let onlineBaseURL = "https://ai4edu-api.jerryang.org"
-    static let prodPath = "/v1/dev"
+struct APIEnvironment {
+    static let onlineBaseURL = AppConfig.baseURL
+    static let prodPath = AppConfig.apiPath
 }
 
 // MARK: - API Errors

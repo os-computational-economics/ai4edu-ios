@@ -358,7 +358,7 @@ struct AgentsView: View {
         
         let formattedWorkspaceId = workspaceId.replacingOccurrences(of: ".", with: "_")
         
-        let baseURL = "https://ai4edu-api.jerryang.org/v1/dev"
+        let baseURL = AppConfig.apiBaseURL
         let endpoint = "/admin/agents/agents"
         _ = "\(baseURL)\(endpoint)?page=\(currentPage)&page_size=10&workspace_id=\(formattedWorkspaceId)"
         

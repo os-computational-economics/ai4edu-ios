@@ -46,3 +46,8 @@ To create or modify an agent, use the web-based version of the platform at the l
 Built using **SwiftUI** for iOS.  
 Requires **Xcode** and a device or simulator running iOS 18.0 or later.
 
+---
+
+## Environment
+
+Change the value in `Environment.swift` to switch between environments.

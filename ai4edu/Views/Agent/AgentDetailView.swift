@@ -568,7 +568,7 @@ struct AgentDetailView: View {
         var previousMessages: [[String: Any]] = []
         
         if messages.isEmpty {
-            _ = "ai4edu-api.jerryang.org/v1/dev/admin/threads/get_thread/\(threadId)"
+            _ = "\(AppConfig.baseURL)\(AppConfig.apiPath)/admin/threads/get_thread/\(threadId)"
         }
         
         for (_, message) in messages.enumerated() {
@@ -704,7 +704,7 @@ struct AgentDetailView: View {
     }
     
     private func handleFileClick(fileId: String, fileName: String) {
-        let urlString = "https://ai4edu-api.jerryang.org/v1/dev/user/get_presigned_url_for_file?file_id=\(fileId)"
+        let urlString = "\(AppConfig.apiBaseURL)/user/get_presigned_url_for_file?file_id=\(fileId)"
         guard let url = URL(string: urlString) else { return }
         
         var request = URLRequest(url: url)
@@ -741,7 +741,7 @@ struct AgentDetailView: View {
         
         currentThreadId = threadId
         
-        _ = "ai4edu-api.jerryang.org/v1/dev/admin/threads/get_thread/\(threadId)"
+        _ = "\(AppConfig.baseURL)\(AppConfig.apiPath)/admin/threads/get_thread/\(threadId)"
         
         ChatService.shared.getThreadMessages(threadId: threadId) { result in
             DispatchQueue.main.async {
