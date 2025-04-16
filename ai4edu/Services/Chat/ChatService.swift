@@ -12,7 +12,7 @@ import SwiftUI
 class ChatService {
     static let shared = ChatService()
     
-    private let baseURL = "https://ai4edu-api.jerryang.org/v1/prod"
+    private let baseURL = "https://ai4edu-api.jerryang.org/v1/dev"
     private var cancellables = Set<AnyCancellable>()
     
     private init() {}

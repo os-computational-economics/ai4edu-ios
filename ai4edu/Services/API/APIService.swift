@@ -10,7 +10,7 @@ import Foundation
 class APIService {
     static let shared = APIService()
     
-    private let baseURL = "https://ai4edu-api.jerryang.org/v1/prod"
+    private let baseURL = "https://ai4edu-api.jerryang.org/v1/dev"
     
     private init() {}
     
@@ -138,7 +138,7 @@ class APIService {
 // API Environment configuration
 enum APIEnvironment {
     static let onlineBaseURL = "https://ai4edu-api.jerryang.org"
-    static let prodPath = "/v1/prod"
+    static let prodPath = "/v1/dev"
 }
 
 // MARK: - API Errors
